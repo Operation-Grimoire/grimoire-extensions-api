@@ -1,0 +1,9 @@
+io.grimoire.api-pngs-0 C:\Users\Rambe\Documents\GitHub\grimoire-extensions-api\api\build\generated\res\pngs\release
+io.grimoire.api-updated_navigation_xml-1 C:\Users\Rambe\Documents\GitHub\grimoire-extensions-api\api\build\generated\updated_navigation_xml\release
+io.grimoire.api-mergeReleaseResources-2 C:\Users\Rambe\Documents\GitHub\grimoire-extensions-api\api\build\intermediates\incremental\release\mergeReleaseResources\merged.dir
+io.grimoire.api-mergeReleaseResources-3 C:\Users\Rambe\Documents\GitHub\grimoire-extensions-api\api\build\intermediates\incremental\release\mergeReleaseResources\stripped.dir
+io.grimoire.api-release-4 C:\Users\Rambe\Documents\GitHub\grimoire-extensions-api\api\build\intermediates\merged_res\release\mergeReleaseResources
+io.grimoire.api-release-5 C:\Users\Rambe\Documents\GitHub\grimoire-extensions-api\api\build\intermediates\packaged_res\release\packageReleaseResources
+io.grimoire.api-main-6 C:\Users\Rambe\Documents\GitHub\grimoire-extensions-api\api\src\main\res
+io.grimoire.api-release-7 C:\Users\Rambe\Documents\GitHub\grimoire-extensions-api\api\src\release\res
+gradleHome-0 C:\Users\Rambe\.gradle

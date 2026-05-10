@@ -1,0 +1,138 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "io.grimoire",
+    "module": "extensions-api",
+    "version": "0.1.0-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.4.1"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseVariantReleaseApiPublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencies": [
+        {
+          "group": "com.squareup.okhttp3",
+          "module": "okhttp",
+          "version": {
+            "requires": "4.12.0"
+          }
+        },
+        {
+          "group": "org.jsoup",
+          "module": "jsoup",
+          "version": {
+            "requires": "1.17.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.2.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "extensions-api-0.1.0-SNAPSHOT.aar",
+          "url": "extensions-api-0.1.0-SNAPSHOT.aar",
+          "size": 38603,
+          "sha512": "09b95c6deae4bff69c15d100eb725dea5bdb0361c62372d99a2a9e93787576c5d06f0dc67e3d6d0625e16a0ab453c0d5b32dd8b3305ee5bc7275ede42277c685",
+          "sha256": "8622aabfe32bd58d02e0b7b7b7cb935c41122fd79ad729d1695f759b7a99aa65",
+          "sha1": "95af10ed4cdfc4173448ac7808bf0f92a8b0611a",
+          "md5": "6d5fb6a560f003df3c7dca1769d03379"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseRuntimePublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "com.squareup.okhttp3",
+          "module": "okhttp",
+          "version": {
+            "requires": "4.12.0"
+          }
+        },
+        {
+          "group": "org.jsoup",
+          "module": "jsoup",
+          "version": {
+            "requires": "1.17.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.2.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "extensions-api-0.1.0-SNAPSHOT.aar",
+          "url": "extensions-api-0.1.0-SNAPSHOT.aar",
+          "size": 38603,
+          "sha512": "09b95c6deae4bff69c15d100eb725dea5bdb0361c62372d99a2a9e93787576c5d06f0dc67e3d6d0625e16a0ab453c0d5b32dd8b3305ee5bc7275ede42277c685",
+          "sha256": "8622aabfe32bd58d02e0b7b7b7cb935c41122fd79ad729d1695f759b7a99aa65",
+          "sha1": "95af10ed4cdfc4173448ac7808bf0f92a8b0611a",
+          "md5": "6d5fb6a560f003df3c7dca1769d03379"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseSourcePublication",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "extensions-api-0.1.0-SNAPSHOT-sources.jar",
+          "url": "extensions-api-0.1.0-SNAPSHOT-sources.jar",
+          "size": 5868,
+          "sha512": "912aea11c7621166e9e2bf986ec304557e3eafb1abd539d0a57d85d16eefec7ad461143d40717da3e79f4a13c461efd627dac0d2e20aba825a8014a524833a0d",
+          "sha256": "28ba74d98e9adea7ca96af98891ed95003f7719d72be6c2eb9cc058e7b434478",
+          "sha1": "149226678fe3a4ec6385620ebfc54b4dc2619788",
+          "md5": "81d1a52dfc064bcb9aa31a8869880995"
+        }
+      ]
+    }
+  ]
+}
