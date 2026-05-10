@@ -33,3 +33,5 @@ build/
 
 # Local config
 local.properties
+
+.idea/
