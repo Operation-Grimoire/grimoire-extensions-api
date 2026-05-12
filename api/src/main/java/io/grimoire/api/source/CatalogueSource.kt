@@ -27,4 +27,12 @@ interface CatalogueSource : Source {
      * [getFilterList]. Must only be invoked off the main thread.
      */
     suspend fun fetchFilterOptions(): List<Filter<*>> = getFilterList()
+
+    /**
+     * `true` when this source's search endpoint accepts a free-text query AND
+     * filters together. Defaults to `false` — most scraped sites expose either
+     * `/search?q=...` or `/genre/<name>` but not both. The host UI uses this to
+     * decide whether to surface a search field inside the filter sheet.
+     */
+    val supportsSearchWithFilters: Boolean get() = false
 }
