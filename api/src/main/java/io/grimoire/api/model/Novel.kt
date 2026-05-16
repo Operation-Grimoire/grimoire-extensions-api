@@ -12,6 +12,9 @@ data class Novel(
     // different scale (e.g. 0..10) must convert before populating this field.
     val rating: Float? = null,
     val ratingCount: Int? = null,
+    // Content language as a plain English name (e.g. "English"). Multi-language
+    // sources should populate this; the host may display it. Null = unknown.
+    val language: String? = null,
     val initialized: Boolean = false,
 )
 
