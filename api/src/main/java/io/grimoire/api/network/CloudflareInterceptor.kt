@@ -64,10 +64,17 @@ class CloudflareInterceptor : Interceptor {
                 userAgentString = NetworkContext.userAgent
             }
             view.webViewClient = object : WebViewClient() {
+                @Volatile
+                private var settling = false
+
                 override fun onPageFinished(view: WebView, finishedUrl: String) {
-                    if (hasClearance(url)) {
-                        latch.countDown()
-                    }
+                    if (!hasClearance(url) || settling) return
+                    // Clearance is set, but the site's own scripts may still
+                    // need to run to issue first-party session cookies (e.g.
+                    // tokens gating downloads). Let the page settle briefly so
+                    // those land in the shared cookie store before teardown.
+                    settling = true
+                    handler.postDelayed({ latch.countDown() }, SETTLE_MS)
                 }
             }
             view.loadUrl(url)
@@ -115,6 +122,11 @@ class CloudflareInterceptor : Interceptor {
     companion object {
         private const val CLEARANCE_COOKIE = "cf_clearance"
         private const val TIMEOUT_SECONDS = 60L
+
+        // After Cloudflare clearance, keep the WebView alive briefly so the
+        // site's own scripts can set first-party session cookies (some sites
+        // gate content/downloads on a JS-issued token) into the shared jar.
+        private const val SETTLE_MS = 5000L
         private const val BODY_PEEK_BYTES = 128L * 1024L
 
         // Cloudflare interstitial bodies are tiny shells; real origin error
