@@ -15,4 +15,17 @@ interface ConfigurableSource : Source {
     fun getPreferences(): List<SourcePreference>
 
     fun setPreferences(values: Map<String, String>)
+
+    /**
+     * Validates the currently-set configuration — typically by performing a
+     * login with the configured credentials — so the user can confirm their
+     * account works from the settings screen instead of discovering a problem
+     * only when a download fails.
+     *
+     * The host calls [setPreferences] with the pending values first, then this.
+     * Must run off the main thread and must not throw; report failures via
+     * [ConfigValidationResult.success] = `false`. Returns `null` when the
+     * source has nothing to validate (the default).
+     */
+    suspend fun validateConfiguration(): ConfigValidationResult? = null
 }
