@@ -71,10 +71,25 @@ class CloudflareInterceptor : Interceptor {
                     if (!hasClearance(url) || settling) return
                     // Clearance is set, but the site's own scripts may still
                     // need to run to issue first-party session cookies (e.g.
-                    // tokens gating downloads). Let the page settle briefly so
-                    // those land in the shared cookie store before teardown.
+                    // tokens gating downloads). Instead of a blind delay, poll
+                    // the cookie store and continue as soon as cookies grow
+                    // beyond clearance (the JS token landed), capping the extra
+                    // wait at SETTLE_MS so the common case stays fast.
                     settling = true
-                    handler.postDelayed({ latch.countDown() }, SETTLE_MS)
+                    val deadline = System.currentTimeMillis() + SETTLE_MS
+                    val baseline = cookieCount(url)
+                    val poll = object : Runnable {
+                        override fun run() {
+                            if (cookieCount(url) > baseline ||
+                                System.currentTimeMillis() >= deadline
+                            ) {
+                                latch.countDown()
+                            } else {
+                                handler.postDelayed(this, SETTLE_POLL_MS)
+                            }
+                        }
+                    }
+                    handler.postDelayed(poll, SETTLE_POLL_MS)
                 }
             }
             view.loadUrl(url)
@@ -98,6 +113,10 @@ class CloudflareInterceptor : Interceptor {
         val cookies = android.webkit.CookieManager.getInstance().getCookie(url) ?: return false
         return cookies.contains(CLEARANCE_COOKIE)
     }
+
+    private fun cookieCount(url: String): Int =
+        android.webkit.CookieManager.getInstance().getCookie(url)
+            ?.split(';')?.count { it.isNotBlank() } ?: 0
 
     private fun Response.isCloudflareChallenge(): Boolean {
         if (code != 403 && code != 503) return false
@@ -123,10 +142,12 @@ class CloudflareInterceptor : Interceptor {
         private const val CLEARANCE_COOKIE = "cf_clearance"
         private const val TIMEOUT_SECONDS = 60L
 
-        // After Cloudflare clearance, keep the WebView alive briefly so the
-        // site's own scripts can set first-party session cookies (some sites
-        // gate content/downloads on a JS-issued token) into the shared jar.
+        // After Cloudflare clearance, keep the WebView alive until the site's
+        // own scripts set first-party session cookies (some sites gate
+        // content/downloads on a JS-issued token), polling so the common case
+        // returns quickly; SETTLE_MS is only the worst-case ceiling.
         private const val SETTLE_MS = 5000L
+        private const val SETTLE_POLL_MS = 200L
         private const val BODY_PEEK_BYTES = 128L * 1024L
 
         // Cloudflare interstitial bodies are tiny shells; real origin error
