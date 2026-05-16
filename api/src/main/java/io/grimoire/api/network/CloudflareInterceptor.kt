@@ -101,7 +101,15 @@ class CloudflareInterceptor : Interceptor {
         val snippet = runCatching {
             peekBody(BODY_PEEK_BYTES).string()
         }.getOrNull().orEmpty()
-        return CHALLENGE_MARKERS.any { snippet.contains(it, ignoreCase = true) }
+        if (CHALLENGE_MARKERS.any { snippet.contains(it, ignoreCase = true) }) return true
+
+        // Lightweight interstitials (e.g. some per-user mirrors) carry none of
+        // the usual script markers — just a "checking your browser" HTML body
+        // served with a cf-ray. A short HTML body from Cloudflare on a 403/503
+        // with a ray id is an interstitial, not an origin error (origin errors
+        // are proxied without a Cloudflare-generated HTML challenge shell).
+        val isHtml = header("Content-Type")?.contains("text/html", ignoreCase = true) == true
+        return isHtml && header("cf-ray") != null && snippet.length < SHORT_HTML_BYTES
     }
 
     companion object {
@@ -109,12 +117,19 @@ class CloudflareInterceptor : Interceptor {
         private const val TIMEOUT_SECONDS = 60L
         private const val BODY_PEEK_BYTES = 128L * 1024L
 
+        // Cloudflare interstitial bodies are tiny shells; real origin error
+        // pages proxied through Cloudflare are typically larger.
+        private const val SHORT_HTML_BYTES = 30 * 1024
+
         private val CHALLENGE_MARKERS = listOf(
             "_cf_chl_opt",
             "cf-browser-verification",
             "challenge-platform",
             "cf_chl_",
-            "Just a moment...",
+            "/cdn-cgi/challenge-platform",
+            "just a moment",
+            "checking your browser",
+            "cf-spinner",
         )
     }
 }
