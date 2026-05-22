@@ -1,6 +1,8 @@
 package io.grimoire.api.model
 
-data class Chapter(
+// @JvmOverloads keeps shorter constructor overloads on the JVM ABI so extensions
+// built against an older api keep linking. Append new fields only; never reorder.
+data class Chapter @JvmOverloads constructor(
     val url: String,
     val name: String,
     val uploadDate: Long = 0L,
