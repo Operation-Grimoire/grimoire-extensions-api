@@ -7,12 +7,15 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to publish (vX.Y.Z). Leave blank to publish a -SNAPSHOT.'
+        description: 'Release version to cut, e.g. v0.2.0 — creates & pushes the tag, then publishes. Leave blank to publish a -SNAPSHOT.'
         required: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create & push the release tag
+      packages: write   # publish to GitHub Packages
 
     steps:
       - uses: actions/checkout@v4
@@ -26,10 +29,28 @@ jobs:
             TAG="${{ github.event.inputs.tag }}"
           fi
           if [ -n "$TAG" ] && ! echo "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "Tag '$TAG' is not vX.Y.Z" >&2
+            echo "Version '$TAG' is not vX.Y.Z" >&2
             exit 1
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      # workflow_dispatch with a version: create & push the git tag here, so a
+      # release can be cut from the Actions UI without pushing a tag by hand.
+      # The tag push uses GITHUB_TOKEN, so it does not re-trigger this workflow.
+      - name: Create release tag
+        if: github.event_name == 'workflow_dispatch' && steps.rel.outputs.tag != ''
+        env:
+          TAG: ${{ steps.rel.outputs.tag }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists on origin — publishing from it."
+          else
+            echo "Creating and pushing tag $TAG at ${{ github.sha }}."
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "$TAG" -m "Release $TAG" "${{ github.sha }}"
+            git push origin "refs/tags/$TAG"
+          fi
 
       - uses: actions/setup-java@v4
         with:
