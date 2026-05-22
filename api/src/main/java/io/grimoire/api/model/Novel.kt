@@ -1,6 +1,8 @@
 package io.grimoire.api.model
 
-data class Novel(
+// @JvmOverloads keeps shorter constructor overloads on the JVM ABI so extensions
+// built against an older api keep linking. Append new fields only; never reorder.
+data class Novel @JvmOverloads constructor(
     val url: String,
     val title: String,
     val thumbnailUrl: String? = null,
