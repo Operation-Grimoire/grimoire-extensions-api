@@ -3,6 +3,14 @@ plugins {
     `maven-publish`
 }
 
+// Publication version. The release workflow builds from a vX.Y.Z tag and sets
+// API_RELEASE_TAG to publish the immutable release X.Y.Z. Every other build
+// (main, local) publishes a -SNAPSHOT of the next version for cross-repo
+// development; bump the base below when a release is cut. See README.md.
+val publishVersion: String =
+    System.getenv("API_RELEASE_TAG")?.trim()?.removePrefix("v")?.takeIf { it.isNotEmpty() }
+        ?: "0.2.0-SNAPSHOT"
+
 android {
     namespace = "io.grimoire.api"
     compileSdk = 36
@@ -46,7 +54,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "io.grimoire"
                 artifactId = "extensions-api"
-                version = "0.1.0-SNAPSHOT"
+                version = publishVersion
             }
         }
     }
