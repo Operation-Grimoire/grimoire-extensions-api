@@ -35,6 +35,14 @@ dependencies {
     api(libs.okhttp)
     api(libs.jsoup)
     api(libs.kotlinx.coroutines.core)
+    testImplementation(libs.junit.jupiter)
+    // Gradle 9 no longer auto-resolves the JUnit Platform Launcher from
+    // ServiceLoader — without this dep tests are silently discovered as zero.
+    testRuntimeOnly(libs.junit.platform.launcher)
+}
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
 }
 
 afterEvaluate {
