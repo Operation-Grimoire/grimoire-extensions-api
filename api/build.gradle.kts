@@ -9,7 +9,7 @@ plugins {
 // development; bump the base below when a release is cut. See README.md.
 val publishVersion: String =
     System.getenv("API_RELEASE_TAG")?.trim()?.removePrefix("v")?.takeIf { it.isNotEmpty() }
-        ?: "0.3.0-SNAPSHOT"
+        ?: "0.4.0-SNAPSHOT"
 
 android {
     namespace = "io.grimoire.api"
@@ -35,6 +35,14 @@ dependencies {
     api(libs.okhttp)
     api(libs.jsoup)
     api(libs.kotlinx.coroutines.core)
+    testImplementation(libs.junit.jupiter)
+    // Gradle 9 no longer auto-resolves the JUnit Platform Launcher from
+    // ServiceLoader — without this dep tests are silently discovered as zero.
+    testRuntimeOnly(libs.junit.platform.launcher)
+}
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
 }
 
 afterEvaluate {
