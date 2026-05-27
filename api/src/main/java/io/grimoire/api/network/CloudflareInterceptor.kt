@@ -20,8 +20,11 @@ import java.util.concurrent.TimeUnit
  * cookie is persisted through [WebViewCookieJar] (shared with OkHttp), after
  * which the original request is retried and succeeds.
  *
- * If no Android context is available (see [NetworkContext]) the original
- * challenge response is returned unchanged so callers can handle it.
+ * If no Android context is available (see [NetworkContext]) — or the silent
+ * WebView resolve fails — a [CloudflareException] is thrown so callers can
+ * surface a dedicated error state (e.g. an "open webview to solve the
+ * challenge" CTA) instead of silently parsing the challenge HTML as content
+ * and ending up with an empty result.
  */
 class CloudflareInterceptor : Interceptor {
 
@@ -34,16 +37,20 @@ class CloudflareInterceptor : Interceptor {
             return response
         }
 
-        val context = NetworkContext.context ?: return response
+        val urlString = request.url.toString()
+        val context = NetworkContext.context
+        if (context == null) {
+            response.close()
+            throw CloudflareException(urlString)
+        }
         response.close()
 
-        val url = request.url
         val solved = runCatching {
-            resolveWithWebView(url.toString())
+            resolveWithWebView(urlString)
         }.getOrDefault(false)
 
         if (!solved) {
-            throw CloudflareBypassException(url.toString())
+            throw CloudflareBypassException(urlString)
         }
 
         return chain.proceed(request)
@@ -167,5 +174,20 @@ class CloudflareInterceptor : Interceptor {
     }
 }
 
+/**
+ * Thrown when the network layer detects a Cloudflare challenge / block that
+ * was not (or could not be) automatically solved. The UI is expected to
+ * surface a dedicated state telling the user to open the source in a WebView
+ * so they can solve the challenge interactively; the resulting `cf_clearance`
+ * cookie is shared via [WebViewCookieJar] and the next request succeeds.
+ *
+ * Extends [IOException] so existing `runCatching` / `catch (e: IOException)`
+ * paths continue to work — branch on the type when a dedicated message is
+ * desired.
+ */
+open class CloudflareException(val url: String, message: String) : IOException(message) {
+    constructor(url: String) : this(url, "Cloudflare challenge detected for $url")
+}
+
 class CloudflareBypassException(url: String) :
-    IOException("Failed to bypass Cloudflare protection for $url")
+    CloudflareException(url, "Failed to bypass Cloudflare protection for $url")
