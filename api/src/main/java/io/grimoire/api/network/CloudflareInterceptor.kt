@@ -136,6 +136,12 @@ class CloudflareInterceptor : Interceptor {
         }.getOrNull().orEmpty()
         if (CHALLENGE_MARKERS.any { snippet.contains(it, ignoreCase = true) }) return true
 
+        // An origin/edge 5xx (nginx "503 Service Temporarily Unavailable", a 502
+        // bad gateway, Cloudflare's own 52x "web server is down") is proxied with
+        // Server: cloudflare + a cf-ray too, but it's a plain server error, not a
+        // solvable challenge — don't mistake it for one (it has no challenge JS).
+        if (ORIGIN_ERROR_MARKERS.any { snippet.contains(it, ignoreCase = true) }) return false
+
         // Lightweight interstitials (e.g. some per-user mirrors) carry none of
         // the usual script markers — just a "checking your browser" HTML body
         // served with a cf-ray. A short HTML body from Cloudflare on a 403/503
@@ -170,6 +176,20 @@ class CloudflareInterceptor : Interceptor {
             "just a moment",
             "checking your browser",
             "cf-spinner",
+        )
+
+        // Plain server/origin errors proxied through Cloudflare. Present in the
+        // body of a 5xx, absent from a genuine challenge shell — so they veto the
+        // short-HTML+cf-ray heuristic below.
+        private val ORIGIN_ERROR_MARKERS = listOf(
+            "service temporarily unavailable",
+            "502 bad gateway",
+            "504 gateway time-out",
+            "504 gateway timeout",
+            "web server is down",
+            "origin is unreachable",
+            "<center>nginx</center>",
+            "internal server error",
         )
     }
 }
