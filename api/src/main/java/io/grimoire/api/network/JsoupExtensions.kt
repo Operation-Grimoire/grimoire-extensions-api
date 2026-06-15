@@ -94,6 +94,22 @@ fun Element.richHtml(): String {
     return out.toString().trim()
 }
 
+/**
+ * Serialises an element holding a novel synopsis into the same constrained HTML
+ * subset as [richHtml], but **preserves paragraph breaks**: each `<p>` is
+ * rendered via [richHtml] and the paragraphs are joined with `<br><br>` (blank
+ * paragraphs dropped), which the app renders as real paragraph spacing through
+ * `AnnotatedString.fromHtml`. Elements without `<p>` children (inline text,
+ * `<br>`-separated prose) fall back to a plain [richHtml] of the whole element.
+ *
+ * Sources set `Novel.description = element.richDescription()` instead of the
+ * old `element.text()` to keep links and inline formatting in the synopsis.
+ */
+fun Element.richDescription(): String {
+    val paragraphs = select("p").map { it.richHtml() }.filter { it.isNotBlank() }
+    return if (paragraphs.isEmpty()) richHtml() else paragraphs.joinToString("<br><br>")
+}
+
 private fun String.htmlEscape(quotes: Boolean = false): String {
     val sb = StringBuilder(length)
     for (c in this) {
