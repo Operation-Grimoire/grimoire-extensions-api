@@ -3,7 +3,8 @@ package io.grimoire.api.source
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class SourceInfo(
-    val id: Long,
+    /** Legacy id — ignored; identity comes from the package via [sourceIdFor]. Omit it. */
+    val id: Long = 0L,
     val name: String,
     val lang: String,
     val baseUrl: String,

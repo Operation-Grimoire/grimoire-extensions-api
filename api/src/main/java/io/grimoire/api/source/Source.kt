@@ -5,7 +5,9 @@ import io.grimoire.api.model.Novel
 import io.grimoire.api.model.NovelPage
 
 interface Source {
-    val id: Long
+    /** Legacy id — ignored; identity comes from the package via [sourceIdFor]. Don't override. */
+    @Deprecated("Identity is derived from the package name via sourceIdFor(); this value is ignored.")
+    val id: Long get() = 0L
     val name: String
     val lang: String
 
