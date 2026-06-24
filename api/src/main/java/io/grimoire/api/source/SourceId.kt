@@ -5,8 +5,7 @@ import java.security.MessageDigest
 /**
  * Stable source identity derived from the extension's Android package name, which
  * is globally unique — so authors never hand-pick or coordinate ids, and repos
- * can't collide. The app keys saved novels by this; the legacy [Source.id] /
- * [SourceInfo.id] are ignored.
+ * can't collide. The app keys saved novels by this.
  *
  * Low 63 bits of MD5(package) — a fast stable hash (not for security).
  */

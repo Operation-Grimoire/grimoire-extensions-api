@@ -1,4 +1,4 @@
-package io.grimoire.api.network
+package io.grimoire.api.util
 
 import org.jsoup.Jsoup
 import org.junit.jupiter.api.Assertions.assertEquals

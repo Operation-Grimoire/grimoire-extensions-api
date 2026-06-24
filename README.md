@@ -5,6 +5,36 @@ the model types (`Novel`, `Chapter`, `NovelPage`, ...), the `Source` interfaces,
 and the HTTP/Jsoup base classes. Published to GitHub Packages as
 `io.grimoire:extensions-api`.
 
+## Source model
+
+A source is **capability-based**: it implements a small base plus only the
+feature interfaces it actually supports. There is no monolithic `CatalogueSource`
+— the host detects each capability with an `is`/`as?` check and surfaces it
+(browse chips, global search, migrate, settings).
+
+- **`source.Source`** — base of every source: `name`, `lang: Language`, and
+  `getNovelDetails`.
+- **Transport bases** (`source.http`) — `HttpSource` (shared OkHttp client +
+  `get`/`GET`/`resolveUrl`) and `ParsedHttpSource` (adds the Jsoup `asJsoup`
+  helper). Carry no capability themselves.
+- **Content axis** — either web (`source.web`: a chapter list via
+  `ChapterListSource` **or** `PaginatedSource`, plus `PageListSource` for page
+  content) or whole-book (`source.epub.EpubSource`).
+- **Feature mixins** (`source.feature`) — `PopularSource`, `LatestSource`,
+  `SearchSource`, `FilterSource`, `ConfigurableSource`, `MultiLanguageSource`,
+  `MultiHostSource`, `WebViewLoginSource`.
+
+```kotlin
+@SourceInfo(name = "Foo", lang = Language.EN, baseUrl = "https://foo.com", versionCode = 1)
+class Foo : ParsedHttpSource(), PopularSource, LatestSource, SearchSource,
+    FilterSource, ChapterListSource, PageListSource { /* ... */ }
+```
+
+Packages: `model.{novel,filter,lang,pref}`, `source`, `source.{http,web,epub,feature}`,
+`network` (transport internals), `util` (Jsoup `richHtml`/`richDescription`).
+Identity is derived from the package name via `sourceIdFor()` — sources never
+declare an id. `@SourceInfo` is read statically by the CI index generator.
+
 ## Versioning
 
 Semantic versioning. The model types are a binary contract shared with

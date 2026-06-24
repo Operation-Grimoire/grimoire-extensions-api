@@ -1,8 +1,10 @@
-package io.grimoire.api.source
+package io.grimoire.api.source.feature
+
+import io.grimoire.api.source.Source
 
 /**
  * A [Source] whose authenticated features — typically access to chapters that
- * are otherwise reported as [io.grimoire.api.model.Chapter.locked] — are
+ * are otherwise reported as [io.grimoire.api.model.novel.Chapter.locked] — are
  * unlocked by signing in through a WebView.
  *
  * The host opens [loginUrl] in a WebView so the user can complete any sign-in

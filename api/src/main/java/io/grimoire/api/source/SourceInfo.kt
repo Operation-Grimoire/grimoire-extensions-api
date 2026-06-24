@@ -1,13 +1,23 @@
 package io.grimoire.api.source
 
+import io.grimoire.api.model.lang.Language
+
+/**
+ * Compile-time metadata on a source class. Read statically (without loading the
+ * extension's code) by `scripts/generate_index.py` to build the extension
+ * `index.json`, and at runtime by the host via reflection. Every concrete source
+ * class is annotated with this.
+ */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class SourceInfo(
-    /** Legacy id — ignored; identity comes from the package via [sourceIdFor]. Omit it. */
-    val id: Long = 0L,
+    /** Display name, matching the class's `name` property. */
     val name: String,
-    val lang: String,
+    /** Content language; [Language.MULTI] for multi-language sources. */
+    val lang: Language,
+    /** Site origin (scheme + host), e.g. `https://novelfull.com`. */
     val baseUrl: String,
+    /** Bumped on every behavioural change so the CI rebuilds the extension. */
     val versionCode: Int = 1,
     /**
      * NovelUpdates release-group names this source corresponds to, if any.
@@ -23,4 +33,7 @@ annotation class SourceInfo(
      * already-built extensions.
      */
     val novelUpdatesGroups: Array<String> = [],
+
+    /** How much adult (R18) content this source serves. Surfaced in the index. */
+    val adultContent: AdultContent = AdultContent.NONE,
 )

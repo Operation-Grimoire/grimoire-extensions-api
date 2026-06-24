@@ -1,4 +1,4 @@
-package io.grimoire.api.source
+package io.grimoire.api.model.pref
 
 /**
  * Declarative description of a single user-configurable setting for a
