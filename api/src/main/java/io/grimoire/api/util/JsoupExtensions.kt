@@ -1,4 +1,4 @@
-package io.grimoire.api.network
+package io.grimoire.api.util
 
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
@@ -9,10 +9,9 @@ private val WHITESPACE_RUN = Regex("""\s+""")
 
 /**
  * Serialises the children of this element into a constrained HTML subset
- * suitable for Compose's `AnnotatedString.fromHtml`. Sources opt in by
- * setting `NovelPage.formattedText = element.richHtml()` alongside the
- * existing plain-text `text`; the reader picks up the rich rendering and
- * TTS/search/etc. keep using `text`.
+ * suitable for Compose's `AnnotatedString.fromHtml`. Sources opt in by emitting
+ * `PageContent.Text(text, html = element.richHtml())`; the reader picks up the
+ * rich `html` rendering while TTS/search/export keep using the plain `text`.
  *
  * Recognised input → output:
  *  - `<br>` → `<br>`

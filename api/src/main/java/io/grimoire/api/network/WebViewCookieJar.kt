@@ -5,6 +5,12 @@ import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
 
+/**
+ * OkHttp [CookieJar] backed by the system WebView's [CookieManager]. Sharing one
+ * cookie store lets a WebView sign-in (see
+ * [io.grimoire.api.source.feature.WebViewLoginSource]) and a solved Cloudflare
+ * challenge replay automatically on the source's OkHttp requests, and vice versa.
+ */
 class WebViewCookieJar : CookieJar {
 
     private val cookieManager = CookieManager.getInstance()

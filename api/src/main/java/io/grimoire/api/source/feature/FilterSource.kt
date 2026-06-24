@@ -1,13 +1,14 @@
-package io.grimoire.api.source
+package io.grimoire.api.source.feature
 
-import io.grimoire.api.model.Filter
-import io.grimoire.api.model.Novel
+import io.grimoire.api.source.Source
 
-interface CatalogueSource : Source {
-    suspend fun getPopularNovels(page: Int): List<Novel>
-    suspend fun getLatestUpdates(page: Int): List<Novel>
-    suspend fun searchNovels(query: String, page: Int, filters: List<Filter<*>>): List<Novel>
+import io.grimoire.api.model.filter.Filter
 
+/**
+ * A [Source] that exposes a filter list to refine browsing/search. Usually paired
+ * with [SearchSource], whose `searchNovels` receives the applied filters.
+ */
+interface FilterSource : Source {
     /**
      * Returns the source's filter list. May contain placeholder entries (e.g. an
      * empty [Filter.Group]) when values must be populated via [fetchFilterOptions].
@@ -27,12 +28,4 @@ interface CatalogueSource : Source {
      * [getFilterList]. Must only be invoked off the main thread.
      */
     suspend fun fetchFilterOptions(): List<Filter<*>> = getFilterList()
-
-    /**
-     * `true` when this source's search endpoint accepts a free-text query AND
-     * filters together. Defaults to `false` — most scraped sites expose either
-     * `/search?q=...` or `/genre/<name>` but not both. The host UI uses this to
-     * decide whether to surface a search field inside the filter sheet.
-     */
-    val supportsSearchWithFilters: Boolean get() = false
 }

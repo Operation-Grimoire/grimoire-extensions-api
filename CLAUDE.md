@@ -5,6 +5,35 @@ model types (`Novel`, `Chapter`, `NovelPage`), `Source` interfaces, and the
 HTTP/Jsoup base classes. Published to GitHub Packages as
 `io.grimoire:extensions-api`.
 
+## Package layout
+
+Capability-based — a source mixes in only the interfaces it supports; there is
+no `CatalogueSource` umbrella.
+
+```
+model/
+  novel/    Novel, NovelStatus, Chapter, NovelPage, PageContent (sealed: Text/Image/Separator)
+  filter/   Filter (sealed: Header/Separator/Text/CheckBox/TriState/Select/Group/Sort)
+  lang/     Language (enum; code + displayName + nativeName; MULTI/UNKNOWN sentinels)
+  pref/     SourcePreference, PrefValue (Str/Bool/Sensitive), ConfigValidationResult
+source/
+  Source            base: name, lang, getNovelDetails
+  SourceInfo        @annotation read statically by the CI index generator
+  SourceId          sourceIdFor(pkg) — identity from package name (no declared id)
+  AdultContent      NONE / PARTIAL / FULL (surfaced in index.json)
+  http/             HttpSource, ParsedHttpSource (transport only, no capability)
+  web/              ChapterSource, ChapterListSource, PaginatedSource, PageListSource
+  epub/             EpubSource (whole-book content axis)
+  feature/          Popular/Latest/Search/Filter/Configurable/MultiLanguage/MultiHost/WebViewLogin
+network/            OkHttp client, Cloudflare + cookie-jar internals
+util/               richHtml / richDescription (Jsoup → constrained HTML)
+```
+
+Content is an axis: a web source declares a chapter list (`ChapterListSource`
+**or** `PaginatedSource`) + `PageListSource`; an `EpubSource` delivers a whole
+book instead. `MultiLanguageSource.availableLanguages()` is `suspend` and returns
+`List<Language>`; `ConfigurableSource.setPreferences` takes `Map<String, PrefValue>`.
+
 ## ABI stability
 
 The model types are a binary contract with already-installed extension APKs.

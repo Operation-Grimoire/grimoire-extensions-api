@@ -1,4 +1,6 @@
-package io.grimoire.api.source
+package io.grimoire.api.source.feature
+
+import io.grimoire.api.source.Source
 
 /**
  * A [Source] whose traffic can be served from any of several interchangeable

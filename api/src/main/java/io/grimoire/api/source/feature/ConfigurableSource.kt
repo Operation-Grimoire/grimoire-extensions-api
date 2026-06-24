@@ -1,4 +1,9 @@
-package io.grimoire.api.source
+package io.grimoire.api.source.feature
+
+import io.grimoire.api.model.pref.ConfigValidationResult
+import io.grimoire.api.model.pref.PrefValue
+import io.grimoire.api.model.pref.SourcePreference
+import io.grimoire.api.source.Source
 
 /**
  * A [Source] that exposes user-configurable settings (e.g. login credentials or
@@ -6,15 +11,16 @@ package io.grimoire.api.source
  * screen, persists the values, and pushes them back via [setPreferences] before
  * the source is used (and again whenever the user changes them).
  *
- * Values are keyed by [SourcePreference.key]. Absent keys mean "use the
- * declared default". [setPreferences] must be cheap and side-effect free
- * (just store the values); any network work happens lazily during normal
- * source calls.
+ * Values are keyed by [SourcePreference.key] and typed via [PrefValue] (matching
+ * the declaring preference: EditText → [PrefValue.Str], Switch → [PrefValue.Bool]).
+ * Absent keys mean "use the declared default". [setPreferences] must be cheap and
+ * side-effect free (just store the values); any network work happens lazily during
+ * normal source calls.
  */
 interface ConfigurableSource : Source {
     fun getPreferences(): List<SourcePreference>
 
-    fun setPreferences(values: Map<String, String>)
+    fun setPreferences(values: Map<String, PrefValue>)
 
     /**
      * Validates the currently-set configuration — typically by performing a

@@ -1,4 +1,4 @@
-package io.grimoire.api.source
+package io.grimoire.api.model.pref
 
 /**
  * Outcome of [ConfigurableSource.validateConfiguration]: whether the
