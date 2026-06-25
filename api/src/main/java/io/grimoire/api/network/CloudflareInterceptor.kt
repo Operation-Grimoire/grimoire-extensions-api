@@ -70,40 +70,49 @@ class CloudflareInterceptor : Interceptor {
                 domStorageEnabled = true
                 userAgentString = NetworkContext.userAgent
             }
-            view.webViewClient = object : WebViewClient() {
-                @Volatile
-                private var settling = false
+            view.webViewClient = WebViewClient()
+            view.loadUrl(url)
 
-                override fun onPageFinished(view: WebView, finishedUrl: String) {
-                    if (!hasClearance(url) || settling) return
-                    // Clearance is set, but the site's own scripts may still
-                    // need to run to issue first-party session cookies (e.g.
-                    // tokens gating downloads). Instead of a blind delay, poll
-                    // the cookie store and continue as soon as cookies grow
-                    // beyond clearance (the JS token landed), capping the extra
-                    // wait at SETTLE_MS so the common case stays fast.
-                    settling = true
-                    val deadline = System.currentTimeMillis() + SETTLE_MS
-                    val baseline = cookieCount(url)
-                    val poll = object : Runnable {
-                        override fun run() {
-                            if (cookieCount(url) > baseline ||
-                                System.currentTimeMillis() >= deadline
-                            ) {
-                                latch.countDown()
-                            } else {
-                                handler.postDelayed(this, SETTLE_POLL_MS)
-                            }
+            // Poll the cookie store directly instead of waiting on page-load
+            // events. Cloudflare commonly issues cf_clearance from the
+            // challenge's own XHR/redirect without firing a fresh onPageFinished,
+            // so gating on that event can hang until the timeout even though
+            // clearance landed in a second or two. Polling returns the instant
+            // clearance appears. Once cleared, a short grace lets the site's own
+            // first-party session cookies follow (some gate downloads on a
+            // JS-issued token) — we stop as soon as the cookie set grows past
+            // clearance, or the grace elapses. [TIMEOUT_SECONDS] is only the
+            // give-up cap for a challenge that never auto-solves.
+            val deadline = System.currentTimeMillis() + TIMEOUT_SECONDS * 1000L
+            val poll = object : Runnable {
+                private var clearedAt = 0L
+                private var baseline = 0
+                override fun run() {
+                    val now = System.currentTimeMillis()
+                    if (hasClearance(url)) {
+                        if (clearedAt == 0L) {
+                            clearedAt = now
+                            baseline = cookieCount(url)
+                        }
+                        if (cookieCount(url) > baseline || now - clearedAt >= SETTLE_MS) {
+                            latch.countDown()
+                            return
                         }
                     }
-                    handler.postDelayed(poll, SETTLE_POLL_MS)
+                    if (now >= deadline) {
+                        latch.countDown()
+                        return
+                    }
+                    handler.postDelayed(this, POLL_MS)
                 }
             }
-            view.loadUrl(url)
+            handler.postDelayed(poll, POLL_MS)
         }
 
         val obtained = try {
-            latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS) && hasClearance(url)
+            // Buffer over the poll's own deadline so the poll wins the race and
+            // reports clearance, rather than this await expiring first.
+            latch.await(TIMEOUT_SECONDS + 2, TimeUnit.SECONDS) && hasClearance(url)
         } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
             false
@@ -127,40 +136,55 @@ class CloudflareInterceptor : Interceptor {
 
     private fun Response.isCloudflareChallenge(): Boolean {
         if (code != 403 && code != 503) return false
-        val server = header("Server").orEmpty()
-        if (!server.contains("cloudflare", ignoreCase = true)) return false
+
+        // Definitive header signal — Cloudflare tags challenges with this
+        // regardless of the (sometimes absent) Server / cf-ray headers.
         if (header("cf-mitigated")?.equals("challenge", ignoreCase = true) == true) return true
 
         val snippet = runCatching {
             peekBody(BODY_PEEK_BYTES).string()
         }.getOrNull().orEmpty()
-        if (CHALLENGE_MARKERS.any { snippet.contains(it, ignoreCase = true) }) return true
 
         // An origin/edge 5xx (nginx "503 Service Temporarily Unavailable", a 502
-        // bad gateway, Cloudflare's own 52x "web server is down") is proxied with
-        // Server: cloudflare + a cf-ray too, but it's a plain server error, not a
-        // solvable challenge — don't mistake it for one (it has no challenge JS).
+        // bad gateway, Cloudflare's own 52x "web server is down") is a plain
+        // server error, not a solvable challenge — veto it before the positive
+        // body checks (it has no challenge JS to run).
         if (ORIGIN_ERROR_MARKERS.any { snippet.contains(it, ignoreCase = true) }) return false
 
-        // Lightweight interstitials (e.g. some per-user mirrors) carry none of
-        // the usual script markers — just a "checking your browser" HTML body
-        // served with a cf-ray. A short HTML body from Cloudflare on a 403/503
-        // with a ray id is an interstitial, not an origin error (origin errors
-        // are proxied without a Cloudflare-generated HTML challenge shell).
+        // The challenge shell carries these scripts/phrases. Detect on the body
+        // alone — do NOT require Server: cloudflare or a cf-ray: some mirrors
+        // front a Cloudflare-style "Just a moment" interstitial without
+        // surfacing those headers, and gating on them silently mis-parses the
+        // challenge HTML as empty content instead of solving / surfacing it.
+        if (CHALLENGE_MARKERS.any { snippet.contains(it, ignoreCase = true) }) return true
+
+        // Marker-less short HTML shell still attributable to Cloudflare by its
+        // edge headers — treat as an interstitial (origin errors are vetoed
+        // above and are typically larger).
         val isHtml = header("Content-Type")?.contains("text/html", ignoreCase = true) == true
-        return isHtml && header("cf-ray") != null && snippet.length < SHORT_HTML_BYTES
+        val fromCloudflareEdge =
+            header("Server").orEmpty().contains("cloudflare", ignoreCase = true) ||
+                header("cf-ray") != null
+        return isHtml && fromCloudflareEdge && snippet.length < SHORT_HTML_BYTES
     }
 
     companion object {
         private const val CLEARANCE_COOKIE = "cf_clearance"
-        private const val TIMEOUT_SECONDS = 60L
 
-        // After Cloudflare clearance, keep the WebView alive until the site's
-        // own scripts set first-party session cookies (some sites gate
-        // content/downloads on a JS-issued token), polling so the common case
-        // returns quickly; SETTLE_MS is only the worst-case ceiling.
-        private const val SETTLE_MS = 5000L
-        private const val SETTLE_POLL_MS = 200L
+        // Cap the headless solve. An auto-solvable managed challenge lands its
+        // cf_clearance cookie within a few seconds; if it hasn't cleared by this
+        // point it almost certainly needs an interactive solve, so fail through
+        // to a CloudflareException quickly (the UI then offers the WebView CTA)
+        // instead of leaving the request — and its loading spinner — hanging.
+        private const val TIMEOUT_SECONDS = 20L
+
+        // After Cloudflare clearance, briefly keep polling so the site's own
+        // scripts can set first-party session cookies (some gate content /
+        // downloads on a JS-issued token). We return the moment the cookie set
+        // grows past clearance; SETTLE_MS is only the ceiling when nothing else
+        // follows, so keep it short to stay snappy.
+        private const val SETTLE_MS = 2000L
+        private const val POLL_MS = 200L
         private const val BODY_PEEK_BYTES = 128L * 1024L
 
         // Cloudflare interstitial bodies are tiny shells; real origin error
