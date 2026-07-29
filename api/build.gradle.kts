@@ -9,7 +9,7 @@ plugins {
 // development; bump the base below when a release is cut. See README.md.
 val publishVersion: String =
     System.getenv("API_RELEASE_TAG")?.trim()?.removePrefix("v")?.takeIf { it.isNotEmpty() }
-        ?: "1.0.0-SNAPSHOT"
+        ?: "1.2.0-SNAPSHOT"
 
 android {
     namespace = "io.grimoire.api"
