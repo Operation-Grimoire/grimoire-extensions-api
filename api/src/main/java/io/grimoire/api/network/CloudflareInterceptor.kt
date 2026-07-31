@@ -65,8 +65,20 @@ class CloudflareInterceptor : Interceptor {
             throw CloudflareBypassException(urlString)
         }
 
+        // Trust but verify: a stale/rejected cf_clearance can make the solve
+        // look successful while the edge still answers with a challenge. If
+        // the retry is challenged too, fail properly instead of handing the
+        // challenge HTML to the caller as content (it parses as an empty
+        // page and the failure becomes invisible).
+        val retried = chain.proceed(request)
+        if (retried.isCloudflareChallenge()) {
+            retried.close()
+            recentFailures[host] = System.currentTimeMillis()
+            throw CloudflareBypassException(urlString)
+        }
+
         recentFailures.remove(host)
-        return chain.proceed(request)
+        return retried
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -74,6 +86,13 @@ class CloudflareInterceptor : Interceptor {
         val latch = CountDownLatch(1)
         val handler = Handler(Looper.getMainLooper())
         var webView: WebView? = null
+
+        // The request that got us here was challenged, so any cf_clearance
+        // already in the cookie store is stale or rejected. "Solved" means a
+        // *different* clearance value appears — merely seeing the old cookie
+        // again must not count, or the solve returns instantly without having
+        // done anything.
+        val staleClearance = clearanceValue(url)
 
         handler.post {
             val view = WebView(NetworkContext.context!!)
@@ -102,7 +121,7 @@ class CloudflareInterceptor : Interceptor {
                 private var baseline = 0
                 override fun run() {
                     val now = System.currentTimeMillis()
-                    if (hasClearance(url)) {
+                    if (hasFreshClearance(url, staleClearance)) {
                         if (clearedAt == 0L) {
                             clearedAt = now
                             baseline = cookieCount(url)
@@ -125,7 +144,7 @@ class CloudflareInterceptor : Interceptor {
         val obtained = try {
             // Buffer over the poll's own deadline so the poll wins the race and
             // reports clearance, rather than this await expiring first.
-            latch.await(TIMEOUT_SECONDS + 2, TimeUnit.SECONDS) && hasClearance(url)
+            latch.await(TIMEOUT_SECONDS + 2, TimeUnit.SECONDS) && hasFreshClearance(url, staleClearance)
         } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
             false
@@ -138,9 +157,18 @@ class CloudflareInterceptor : Interceptor {
         return obtained
     }
 
-    private fun hasClearance(url: String): Boolean {
-        val cookies = android.webkit.CookieManager.getInstance().getCookie(url) ?: return false
-        return cookies.contains(CLEARANCE_COOKIE)
+    /** Current cf_clearance cookie value for [url], or null when absent. */
+    private fun clearanceValue(url: String): String? =
+        android.webkit.CookieManager.getInstance().getCookie(url)
+            ?.split(';')
+            ?.map { it.trim() }
+            ?.firstOrNull { it.startsWith("$CLEARANCE_COOKIE=") }
+            ?.substringAfter('=')
+
+    /** True when a clearance exists that differs from the pre-solve [stale] value. */
+    private fun hasFreshClearance(url: String, stale: String?): Boolean {
+        val current = clearanceValue(url) ?: return false
+        return current != stale
     }
 
     private fun cookieCount(url: String): Int =
