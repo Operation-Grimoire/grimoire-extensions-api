@@ -8,6 +8,7 @@ import android.webkit.WebViewClient
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -45,14 +46,26 @@ class CloudflareInterceptor : Interceptor {
         }
         response.close()
 
+        // A challenge that just defeated the headless solve will defeat it
+        // again: it needs an interactive solve in a real WebView. Fail every
+        // follow-up request for the host fast instead of stalling each one for
+        // another TIMEOUT_SECONDS, so the UI's WebView CTA appears immediately.
+        val host = request.url.host
+        val failedAt = recentFailures[host]
+        if (failedAt != null && System.currentTimeMillis() - failedAt < FAILURE_COOLDOWN_MS) {
+            throw CloudflareBypassException(urlString)
+        }
+
         val solved = runCatching {
             resolveWithWebView(urlString)
         }.getOrDefault(false)
 
         if (!solved) {
+            recentFailures[host] = System.currentTimeMillis()
             throw CloudflareBypassException(urlString)
         }
 
+        recentFailures.remove(host)
         return chain.proceed(request)
     }
 
@@ -176,7 +189,14 @@ class CloudflareInterceptor : Interceptor {
         // point it almost certainly needs an interactive solve, so fail through
         // to a CloudflareException quickly (the UI then offers the WebView CTA)
         // instead of leaving the request — and its loading spinner — hanging.
-        private const val TIMEOUT_SECONDS = 20L
+        private const val TIMEOUT_SECONDS = 10L
+
+        // How long a failed headless solve short-circuits further attempts for
+        // the same host. Long enough to cover a burst of parallel/follow-up
+        // requests, short enough to try again on the user's next real action.
+        private const val FAILURE_COOLDOWN_MS = 60_000L
+
+        private val recentFailures = ConcurrentHashMap<String, Long>()
 
         // After Cloudflare clearance, briefly keep polling so the site's own
         // scripts can set first-party session cookies (some gate content /
