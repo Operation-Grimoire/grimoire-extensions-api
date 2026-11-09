@@ -3,20 +3,14 @@ plugins {
     `maven-publish`
 }
 
-// Publication version. The release workflow builds from a vX.Y.Z tag and sets
-// API_RELEASE_TAG to publish the immutable release X.Y.Z. Every other build
-// (main, local) publishes a -SNAPSHOT of the next version for cross-repo
-// development; bump the base below when a release is cut. See README.md.
-val publishVersion: String =
-    System.getenv("API_RELEASE_TAG")?.trim()?.removePrefix("v")?.takeIf { it.isNotEmpty() }
-        ?: "1.3.0-SNAPSHOT"
-
+// The root build owns the version shared with extensions-core.
 android {
     namespace = "io.grimoire.api"
     compileSdk = 36
 
     defaultConfig {
         minSdk = 26
+        consumerProguardFiles("consumer-rules.pro")
     }
 
     compileOptions {
@@ -32,9 +26,7 @@ android {
 }
 
 dependencies {
-    api(libs.okhttp)
-    api(libs.jsoup)
-    api(libs.kotlinx.coroutines.core)
+    api(project(":core"))
     testImplementation(libs.junit.jupiter)
     // Gradle 9 no longer auto-resolves the JUnit Platform Launcher from
     // ServiceLoader — without this dep tests are silently discovered as zero.
@@ -62,7 +54,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "io.grimoire"
                 artifactId = "extensions-api"
-                version = publishVersion
+                version = rootProject.version.toString()
             }
         }
     }

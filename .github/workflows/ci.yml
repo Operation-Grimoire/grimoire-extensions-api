@@ -1,0 +1,49 @@
+name: Build and binary compatibility
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Test the ABI artifact checker
+        run: python3 -m unittest discover -s tools -p test_check_api_abi.py -v
+      - name: Build and test both artifacts
+        run: |
+          chmod +x gradlew
+          ./gradlew :core:test :core:jar :api:assembleRelease :api:lintRelease :core:generatePomFileForCorePublication :api:generatePomFileForReleasePublication
+      - uses: actions/checkout@v4
+        if: github.event_name == 'pull_request'
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: .abi-baseline
+      - name: Build unchanged base API
+        if: github.event_name == 'pull_request'
+        run: |
+          chmod +x .abi-baseline/gradlew
+          .abi-baseline/gradlew -p .abi-baseline :api:assembleRelease
+      - name: Compare installed-extension JVM contract
+        if: github.event_name == 'pull_request'
+        run: |
+          baseline_artifacts=(.abi-baseline/api/build/outputs/aar/api-release.aar)
+          for core_jar in .abi-baseline/core/build/libs/extensions-core-*-SNAPSHOT.jar; do
+            if [ -f "$core_jar" ]; then baseline_artifacts+=("$core_jar"); fi
+          done
+          python3 tools/check_api_abi.py \
+            --baseline "${baseline_artifacts[@]}" \
+            --current api/build/outputs/aar/api-release.aar core/build/libs/extensions-core-*-SNAPSHOT.jar \
+            --core core/build/libs/extensions-core-*-SNAPSHOT.jar \
+            --android-pom api/build/publications/release/pom-default.xml \
+            --core-pom core/build/publications/core/pom-default.xml

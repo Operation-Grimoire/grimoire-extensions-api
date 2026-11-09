@@ -161,11 +161,10 @@ class JsoupExtensionsTest {
     }
 
     @Test
-    fun `script and other unknown blocks are unwrapped`() {
-        // Children get walked even if we don't recognise the tag — useful
-        // for `<div>`/`<section>` wrappers, fragile for `<script>`/`<style>`
-        // but those are unusual inside a story <p>. If they ever appear,
-        // the caller's selector should keep them out.
-        assertEquals("hello", p("<div>hello</div>").richHtml())
+    fun `unknown block wrappers are unwrapped`() {
+        // Block elements cannot be nested inside p: the HTML parser closes it.
+        val wrapper = Jsoup.parseBodyFragment("<section><div>hello</div></section>")
+            .selectFirst("section")!!
+        assertEquals("hello", wrapper.richHtml())
     }
 }
