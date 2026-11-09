@@ -177,7 +177,12 @@ def check(baseline, current, core, android_pom=None, core_pom=None):
         if updated is None:
             problems.append(f"Missing class: {name}")
             continue
-        if updated[0] & 0x663F != flags & 0x663F or updated[1:3] != (parent, interfaces):
+        # A final class cannot have old subclasses whose inherited defaults could
+        # conflict with a new interface. Keep extensible class hierarchies strict.
+        compatible_interfaces = (updated[2] == interfaces or
+                                 bool(flags & 0x10) and set(interfaces).issubset(updated[2]))
+        if (updated[0] & 0x663F != flags & 0x663F or updated[1] != parent
+                or not compatible_interfaces):
             problems.append(f"Changed class hierarchy/access: {name}")
         for symbol, access in members.items():
             replacement = updated[3].get(symbol)

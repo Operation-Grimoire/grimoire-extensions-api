@@ -12,6 +12,11 @@ interface SourceHttpPlatform {
     val interceptors: List<Interceptor> get() = emptyList()
 }
 
+/** Optional host capability for per-response processing, including redirect Set-Cookie headers. */
+interface SourceHttpNetworkInterceptors {
+    val networkInterceptors: List<Interceptor>
+}
+
 /** One platform and one source HTTP pool per process. Configure before loading extensions. */
 object SourceNetwork {
     private val lock = Any()

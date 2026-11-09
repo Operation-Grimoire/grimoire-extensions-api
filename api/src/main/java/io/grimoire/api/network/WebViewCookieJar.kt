@@ -1,28 +1,15 @@
 package io.grimoire.api.network
 
-import android.webkit.CookieManager
+import io.grimoire.sessions.BrowserCookieJar
+import io.grimoire.sessions.android.WebViewCookieStore
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
 
-/**
- * OkHttp [CookieJar] backed by the system WebView's [CookieManager]. Sharing one
- * cookie store lets a WebView sign-in (see
- * [io.grimoire.api.source.feature.WebViewLoginSource]) and a solved Cloudflare
- * challenge replay automatically on the source's OkHttp requests, and vice versa.
- */
-class WebViewCookieJar : CookieJar {
+/** Binary-compatible entry point backed by the shared browser-sessions Android adapter. */
+class WebViewCookieJar internal constructor(private val delegate: CookieJar) : CookieJar {
+    constructor() : this(BrowserCookieJar(WebViewCookieStore()))
 
-    private val cookieManager = CookieManager.getInstance()
-
-    override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-        val urlString = url.toString()
-        cookies.forEach { cookieManager.setCookie(urlString, it.toString()) }
-    }
-
-    override fun loadForRequest(url: HttpUrl): List<Cookie> {
-        val rawCookies = cookieManager.getCookie(url.toString()) ?: return emptyList()
-        return rawCookies.split(";")
-            .mapNotNull { Cookie.parse(url, it.trim()) }
-    }
+    override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) = delegate.saveFromResponse(url, cookies)
+    override fun loadForRequest(url: HttpUrl): List<Cookie> = delegate.loadForRequest(url)
 }

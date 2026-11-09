@@ -19,5 +19,8 @@ internal fun buildSourceHttpClient(platform: SourceHttpPlatform): OkHttpClient =
         .connectionPool(ConnectionPool(5, 5, TimeUnit.MINUTES))
         .cookieJar(platform.cookieJar)
         .addInterceptor(UserAgentInterceptor { platform.userAgent })
-        .apply { platform.interceptors.forEach(::addInterceptor) }
+        .apply {
+            platform.interceptors.forEach(::addInterceptor)
+            (platform as? SourceHttpNetworkInterceptors)?.networkInterceptors?.forEach(::addNetworkInterceptor)
+        }
         .build()
