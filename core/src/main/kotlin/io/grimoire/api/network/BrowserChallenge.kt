@@ -25,23 +25,12 @@ fun Response.isSourceBrowserChallenge(): Boolean {
     // front a Cloudflare-style "Just a moment" interstitial without
     // surfacing those headers, and gating on them silently mis-parses the
     // challenge HTML as empty content instead of solving / surfacing it.
-    if (CHALLENGE_MARKERS.any { snippet.contains(it, ignoreCase = true) }) return true
-
-    // Marker-less short HTML shell still attributable to Cloudflare by its
-    // edge headers — treat as an interstitial (origin errors are vetoed
-    // above and are typically larger).
-    val isHtml = header("Content-Type")?.contains("text/html", ignoreCase = true) == true
-    val fromCloudflareEdge =
-        header("Server").orEmpty().contains("cloudflare", ignoreCase = true) ||
-            header("cf-ray") != null
-    return isHtml && fromCloudflareEdge && snippet.length < SHORT_HTML_BYTES
+    // Edge headers and small HTML bodies also occur on ordinary access-denied
+    // and origin errors. Only challenge-specific evidence warrants a browser solve.
+    return CHALLENGE_MARKERS.any { snippet.contains(it, ignoreCase = true) }
 }
 
 private const val BODY_PEEK_BYTES = 128L * 1024L
-
-// Cloudflare interstitial bodies are tiny shells; real origin error
-// pages proxied through Cloudflare are typically larger.
-private const val SHORT_HTML_BYTES = 30 * 1024
 
 private val CHALLENGE_MARKERS = listOf(
     "_cf_chl_opt",

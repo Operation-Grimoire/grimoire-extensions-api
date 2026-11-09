@@ -13,11 +13,10 @@ class BrowserChallengeTest {
             .protocol(Protocol.HTTP_1_1).code(code).message("fixture").body(body.toResponseBody())
             .apply { headers.forEach { (key, value) -> addHeader(key, value) } }.build()
 
-    @Test fun `recognizes header script and short edge shell without consuming content`() {
+    @Test fun `recognizes challenge headers and scripts without consuming content`() {
         listOf(
             response(403, "blocked", "cf-mitigated" to "CHALLENGE"),
             response(503, "<script>_cf_chl_opt</script>"),
-            response(403, "small shell", "Content-Type" to "text/html", "cf-ray" to "fixture"),
         ).forEach { it.use { r -> assertTrue(r.isSourceBrowserChallenge()); assertFalse(r.body!!.string().isEmpty()) } }
     }
 
@@ -28,5 +27,16 @@ class BrowserChallengeTest {
             response(503, "Service Temporarily Unavailable", "Content-Type" to "text/html", "Server" to "cloudflare"),
             response(503, "x".repeat(31 * 1024), "Content-Type" to "text/html", "Server" to "cloudflare"),
         ).forEach { it.use { r -> assertFalse(r.isSourceBrowserChallenge()) } }
+    }
+
+    @Test fun `ordinary short and empty Cloudflare HTML responses are not challenges`() {
+        listOf(403, 503).forEach { code ->
+            listOf("", "<html>Access denied</html>").forEach { body ->
+                response(code, body, "Content-Type" to "text/html", "Server" to "cloudflare", "cf-ray" to "fixture").use {
+                    assertFalse(it.isSourceBrowserChallenge())
+                    assertEquals(body, it.body!!.string())
+                }
+            }
+        }
     }
 }

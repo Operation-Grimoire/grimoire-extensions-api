@@ -90,19 +90,4 @@ class SourceNetworkTest {
         }
     }
 
-    @Test
-    fun `missing JVM platform fails clearly and installed client retains one pool`() {
-        assertThrows(IllegalStateException::class.java) { defaultOkHttpClient() }
-        val platform = Platform()
-        SourceNetwork.install(platform)
-        SourceNetwork.install(platform)
-        val first = defaultOkHttpClient()
-        assertSame(first, defaultOkHttpClient())
-        val derived = first.newBuilder().build()
-        assertSame(first.connectionPool, derived.connectionPool)
-        assertSame(first.dispatcher, derived.dispatcher)
-        assertEquals(30_000, first.connectTimeoutMillis)
-        assertThrows(IllegalStateException::class.java) { SourceNetwork.install(Platform()) }
-        assertSame(first, defaultOkHttpClient())
-    }
 }

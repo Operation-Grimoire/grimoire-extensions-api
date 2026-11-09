@@ -22,7 +22,11 @@ dependencies {
     testImplementation(libs.mockwebserver)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
-tasks.withType<Test>().configureEach { useJUnitPlatform() }
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
+    // SourceNetwork has process-lifetime state; each test class gets a fresh host JVM.
+    forkEvery = 1
+}
 
 publishing {
     publications {

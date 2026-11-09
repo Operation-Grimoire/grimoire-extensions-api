@@ -43,3 +43,17 @@ results matched across a packaged JVM JAR and an actual API 35 APK loaded throug
 DexClassLoader, with both hashes checked. Grimoire desktop tests also consumed
 the external JAR. These are local consumer proofs; publication and coordinated
 remote integration remain pending.
+
+## Review hardening
+
+Review regressions exposed overwritten baseline contracts, string-literal false
+positives, lost nested visibility and annotation-kind changes in the ABI gate.
+Six tests compile real Java 11 fixtures and now cover those cases, including
+Android member/array/generic/annotation/bytecode types. CI runs this suite.
+The checker passed against both original AAR baselines separately and together.
+
+Ordinary short/empty Cloudflare 403/503 HTML now requires explicit challenge
+evidence before triggering browser handling. The added regression failed before
+this fix; all 33 core tests now pass. Each test class runs in a fresh JVM so the
+process-lifetime SourceNetwork owner cannot leak into another class's tests.
+Android release assembly and lint passed after these changes.

@@ -15,9 +15,10 @@ cookie jar, browser challenge handler and `NetworkContext`, and re-exports core
 as a compile dependency. Android consumers keep the existing API coordinate.
 
 Both artifacts use the same version from the root build. Publish core before
-the Android wrapper. This change requires a release before consumers can resolve
-the new coordinate from GitHub Packages; local composite builds require no
-publication or global Maven-cache replacement.
+the Android wrapper. Main pushes publish matching SNAPSHOT artifacts, which
+consumers can resolve after publication. Tagged releases provide immutable
+versions. Local composite builds require no publication or global Maven-cache
+replacement.
 
 JVM hosts install their browser/session integration before instantiating sources:
 
@@ -40,6 +41,9 @@ resource using the host API classloader. This preserves source/client constructi
 before `NetworkContext.init(context)`; keep that initialization for browser-backed
 challenge handling. Android's existing cookie/challenge behavior remains in the
 adapter. A JVM host with no installed platform fails explicitly.
+
+Browser-challenge detection requires the challenge header or challenge-specific
+body evidence. Ordinary short or empty Cloudflare error pages remain HTTP errors.
 
 Build and test:
 
