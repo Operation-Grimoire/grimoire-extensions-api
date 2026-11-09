@@ -8,9 +8,9 @@ and the HTTP/Jsoup base classes. Published to GitHub Packages as
 
 ## Shared JVM runtime
 
-The stable release is `1.3.0`: Android uses `io.grimoire:extensions-api:1.3.0`
-and JVM hosts use `io.grimoire:extensions-core:1.3.0`. The Android wrapper
-re-exports the matching core dependency. Main builds now develop `1.4.0-SNAPSHOT`;
+The stable release is `1.4.0`: Android uses `io.grimoire:extensions-api:1.4.0`
+and JVM hosts use `io.grimoire:extensions-core:1.4.0`. The Android wrapper
+re-exports the matching core dependency. Main builds now develop `1.4.1-SNAPSHOT`;
 tagged versions remain immutable.
 
 The `core` module owns the portable models, source interfaces, HTML helpers,
@@ -73,18 +73,18 @@ separate consumer gate before coordinating the API release.
 
 A source is **capability-based**: it implements a small base plus only the
 feature interfaces it actually supports. There is no monolithic `CatalogueSource`
-— the host detects each capability with an `is`/`as?` check and surfaces it
+â€” the host detects each capability with an `is`/`as?` check and surfaces it
 (browse chips, global search, migrate, settings).
 
-- **`source.Source`** — base of every source: `name`, `lang: Language`, and
+- **`source.Source`** â€” base of every source: `name`, `lang: Language`, and
   `getNovelDetails`.
-- **Transport bases** (`source.http`) — `HttpSource` (shared OkHttp client +
+- **Transport bases** (`source.http`) â€” `HttpSource` (shared OkHttp client +
   `get`/`GET`/`resolveUrl`) and `ParsedHttpSource` (adds the Jsoup `asJsoup`
   helper). Carry no capability themselves.
-- **Content axis** — either web (`source.web`: a chapter list via
+- **Content axis** â€” either web (`source.web`: a chapter list via
   `ChapterListSource` **or** `PaginatedSource`, plus `PageListSource` for page
   content) or whole-book (`source.epub.EpubSource`).
-- **Feature mixins** (`source.feature`) — `PopularSource`, `LatestSource`,
+- **Feature mixins** (`source.feature`) â€” `PopularSource`, `LatestSource`,
   `SearchSource`, `FilterSource`, `ConfigurableSource`, `MultiLanguageSource`,
   `MultiHostSource`, `WebViewLoginSource`.
 
@@ -96,7 +96,7 @@ class Foo : ParsedHttpSource(), PopularSource, LatestSource, SearchSource,
 
 Packages: `model.{novel,filter,lang,pref}`, `source`, `source.{http,web,epub,feature}`,
 `network` (transport internals), `util` (Jsoup `richHtml`/`richDescription`).
-Identity is derived from the package name via `sourceIdFor()` — sources never
+Identity is derived from the package name via `sourceIdFor()` â€” sources never
 declare an id. `@SourceInfo` is read statically by the CI index generator.
 
 ## Versioning
@@ -104,24 +104,24 @@ declare an id. `@SourceInfo` is read statically by the CI index generator.
 Semantic versioning. The model types are a binary contract shared with
 already-installed extension APKs, so the version communicates ABI impact:
 
-- **PATCH** — fixes, no API surface change.
-- **MINOR** — additive, binary-compatible changes (e.g. a new trailing field on
+- **PATCH** â€” fixes, no API surface change.
+- **MINOR** â€” additive, binary-compatible changes (e.g. a new trailing field on
   a model). Installed extensions keep working. Model constructors carry
-  `@JvmOverloads`, so additions must stay append-only — new fields last, always
+  `@JvmOverloads`, so additions must stay append-only â€” new fields last, always
   defaulted, never reordered/removed.
-- **MAJOR** — breaking changes. Extensions must be rebuilt against the new API.
+- **MAJOR** â€” breaking changes. Extensions must be rebuilt against the new API.
 
 ## Releasing
 
 - Every push to `main` publishes `<next>-SNAPSHOT` (mutable) for developing the
   app and extensions against unreleased changes.
-- A release is cut by pushing a `vX.Y.Z` tag — or running the **Publish to
-  GitHub Packages** workflow with a `tag` input — which publishes the immutable
+- A release is cut by pushing a `vX.Y.Z` tag â€” or running the **Publish to
+  GitHub Packages** workflow with a `tag` input â€” which publishes the immutable
   `X.Y.Z` artifact.
 - After cutting a release, bump the `-SNAPSHOT` base (`publishVersion` in
   root `build.gradle.kts`) to the next version.
 
-Consumers — the `grimoire` app and the `grimoire-extensions` repo — should pin a
+Consumers â€” the `grimoire` app and the `grimoire-extensions` repo â€” should pin a
 concrete `X.Y.Z` and upgrade deliberately.
 
 ## Browser session integration
