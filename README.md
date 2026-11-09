@@ -8,6 +8,11 @@ and the HTTP/Jsoup base classes. Published to GitHub Packages as
 
 ## Shared JVM runtime
 
+The stable release is `1.3.0`: Android uses `io.grimoire:extensions-api:1.3.0`
+and JVM hosts use `io.grimoire:extensions-core:1.3.0`. The Android wrapper
+re-exports the matching core dependency. Main builds now develop `1.3.1-SNAPSHOT`;
+tagged versions remain immutable.
+
 The `core` module owns the portable models, source interfaces, HTML helpers,
 HTTP base classes and common network exceptions. It produces a Java 11-compatible
 JAR without Android class references. The `api` module keeps the Android WebView
