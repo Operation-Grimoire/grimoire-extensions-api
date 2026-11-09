@@ -3,7 +3,59 @@
 The API contract shared by the Grimoire reader app and its content extensions:
 the model types (`Novel`, `Chapter`, `NovelPage`, ...), the `Source` interfaces,
 and the HTTP/Jsoup base classes. Published to GitHub Packages as
-`io.grimoire:extensions-api`.
+`io.grimoire:extensions-api` for Android, with a shared JVM runtime in
+`io.grimoire:extensions-core`.
+
+## Shared JVM runtime
+
+The `core` module owns the portable models, source interfaces, HTML helpers,
+HTTP base classes and common network exceptions. It produces a Java 11-compatible
+JAR without Android class references. The `api` module keeps the Android WebView
+cookie jar, browser challenge handler and `NetworkContext`, and re-exports core
+as a compile dependency. Android consumers keep the existing API coordinate.
+
+Both artifacts use the same version from the root build. Publish core before
+the Android wrapper. This change requires a release before consumers can resolve
+the new coordinate from GitHub Packages; local composite builds require no
+publication or global Maven-cache replacement.
+
+JVM hosts install their browser/session integration before instantiating sources:
+
+```kotlin
+SourceNetwork.install(object : SourceHttpPlatform {
+    override val cookieJar = hostCookieJar
+    override val userAgent: String get() = hostBrowserUserAgent
+    override val interceptors = listOf(hostChallengeInterceptor)
+})
+```
+
+The host owns these collaborators for the process lifetime. Sources share one
+HTTP client and connection pool; use `defaultOkHttpClient().newBuilder()` for
+source-specific clients. Requests with an explicit User-Agent retain it.
+Replacing an installed platform is rejected so existing sources cannot retain
+different session owners accidentally.
+
+Android discovers `AndroidSourceHttpPlatform` through the wrapper's ServiceLoader
+resource using the host API classloader. This preserves source/client construction
+before `NetworkContext.init(context)`; keep that initialization for browser-backed
+challenge handling. Android's existing cookie/challenge behavior remains in the
+adapter. A JVM host with no installed platform fails explicitly.
+
+Build and test:
+
+```sh
+./gradlew :core:test :core:jar :api:assembleRelease :api:lintRelease
+```
+
+The CI binary check compares public/protected class hierarchies and member JVM
+descriptors against the pull request base. It also checks duplicate classes,
+Android references in core and the wrapper's core POM dependency. It is not a
+replacement for runtime browser/device or Kotlin source-compatibility tests.
+
+Tools that compile API source directories directly must migrate before adopting
+this layout: portable sources now live in `core/src/main/kotlin`, while the
+Android directory contains only platform adapters. Inspector migration is a
+separate consumer gate before coordinating the API release.
 
 ## Source model
 
@@ -55,7 +107,7 @@ already-installed extension APKs, so the version communicates ABI impact:
   GitHub Packages** workflow with a `tag` input — which publishes the immutable
   `X.Y.Z` artifact.
 - After cutting a release, bump the `-SNAPSHOT` base (`publishVersion` in
-  `api/build.gradle.kts`) to the next version.
+  root `build.gradle.kts`) to the next version.
 
 Consumers — the `grimoire` app and the `grimoire-extensions` repo — should pin a
 concrete `X.Y.Z` and upgrade deliberately.

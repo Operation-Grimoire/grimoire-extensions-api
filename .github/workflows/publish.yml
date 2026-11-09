@@ -34,24 +34,6 @@ jobs:
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      # workflow_dispatch with a version: create & push the git tag here, so a
-      # release can be cut from the Actions UI without pushing a tag by hand.
-      # The tag push uses GITHUB_TOKEN, so it does not re-trigger this workflow.
-      - name: Create release tag
-        if: github.event_name == 'workflow_dispatch' && steps.rel.outputs.tag != ''
-        env:
-          TAG: ${{ steps.rel.outputs.tag }}
-        run: |
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists on origin — publishing from it."
-          else
-            echo "Creating and pushing tag $TAG at ${{ github.sha }}."
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git tag -a "$TAG" -m "Release $TAG" "${{ github.sha }}"
-            git push origin "refs/tags/$TAG"
-          fi
-
       - uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -61,6 +43,36 @@ jobs:
 
       - name: Grant gradlew permission
         run: chmod +x gradlew
+
+      - name: Check shared runtime and Android wrapper
+        run: ./gradlew :core:test :api:assembleRelease :api:lintRelease
+
+      # Validate before creating a release tag. Existing tags must name this checkout.
+      - name: Create release tag
+        if: github.event_name == 'workflow_dispatch' && steps.rel.outputs.tag != ''
+        env:
+          TAG: ${{ steps.rel.outputs.tag }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            git fetch origin "refs/tags/$TAG:refs/tags/$TAG"
+            if [ "$(git rev-list -n 1 "$TAG")" != "$(git rev-parse HEAD)" ]; then
+              echo "Tag $TAG does not name the tested checkout; refusing to publish."
+              exit 1
+            fi
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "$TAG" -m "Release $TAG" "${{ github.sha }}"
+            git push origin "refs/tags/$TAG"
+          fi
+
+      # Publish the dependency before the Android wrapper which re-exports it.
+      - name: Publish portable core to GitHub Packages
+        run: ./gradlew :core:publishCorePublicationToGitHubPackagesRepository
+        env:
+          API_RELEASE_TAG: ${{ steps.rel.outputs.tag }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Empty API_RELEASE_TAG -> build.gradle.kts falls back to <next>-SNAPSHOT.
       - name: Publish to GitHub Packages

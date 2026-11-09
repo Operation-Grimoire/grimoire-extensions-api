@@ -265,21 +265,3 @@ class CloudflareInterceptor : Interceptor {
         )
     }
 }
-
-/**
- * Thrown when the network layer detects a Cloudflare challenge / block that
- * was not (or could not be) automatically solved. The UI is expected to
- * surface a dedicated state telling the user to open the source in a WebView
- * so they can solve the challenge interactively; the resulting `cf_clearance`
- * cookie is shared via [WebViewCookieJar] and the next request succeeds.
- *
- * Extends [IOException] so existing `runCatching` / `catch (e: IOException)`
- * paths continue to work — branch on the type when a dedicated message is
- * desired.
- */
-open class CloudflareException(val url: String, message: String) : IOException(message) {
-    constructor(url: String) : this(url, "Cloudflare challenge detected for $url")
-}
-
-class CloudflareBypassException(url: String) :
-    CloudflareException(url, "Failed to bypass Cloudflare protection for $url")

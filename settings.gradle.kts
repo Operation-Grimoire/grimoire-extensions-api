@@ -14,4 +14,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "grimoire-extensions-api"
-include(":api")
+include(":api", ":core")

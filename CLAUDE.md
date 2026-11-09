@@ -5,6 +5,13 @@ model types (`Novel`, `Chapter`, `NovelPage`), `Source` interfaces, and the
 HTTP/Jsoup base classes. Published to GitHub Packages as
 `io.grimoire:extensions-api`.
 
+`core/` now contains the portable API and publishes `io.grimoire:extensions-core`
+as a Java 11 JVM JAR. `api/` is the Android wrapper and re-exports it. Preserve
+existing packages and JVM entry points, including `OkHttpHelperKt` and the
+no-argument `UserAgentInterceptor` constructor. Android's ServiceLoader provider
+must remain packaged/kept so callers created before `NetworkContext.init` work.
+Other JVM hosts explicitly install `SourceHttpPlatform` before loading sources.
+
 ## Package layout
 
 Capability-based — a source mixes in only the interfaces it supports; there is
@@ -48,7 +55,7 @@ pre-built extension breaks at runtime with `NoSuchMethodError`.
 
 ## Versioning & releasing
 
-The published version is computed in `api/build.gradle.kts` (`publishVersion`) —
+The published version is computed in root `build.gradle.kts` (`publishVersion`) —
 it is not a hardcoded constant:
 
 - No `API_RELEASE_TAG` env → `<base>-SNAPSHOT`. Every push to `main` publishes
@@ -67,7 +74,7 @@ re-publish the same immutable coordinate on every merge to `main`.
    `git tag -a vX.Y.Z <main-sha> -m "Release X.Y.Z" && git push origin vX.Y.Z`
    This triggers the Publish workflow → immutable
    `io.grimoire:extensions-api:X.Y.Z` on GitHub Packages.
-2. Bump the `-SNAPSHOT` base (`publishVersion` in `api/build.gradle.kts`) to the
+2. Bump the `-SNAPSHOT` base (`publishVersion` in root `build.gradle.kts`) to the
    next version.
 3. Pin consumers to the new concrete version:
    - `grimoire` app — `app/build.gradle.kts`
