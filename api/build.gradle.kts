@@ -10,6 +10,7 @@ android {
 
     defaultConfig {
         minSdk = 26
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
 
@@ -27,6 +28,11 @@ android {
 
 dependencies {
     api(project(":core"))
+    implementation("io.grimoire:browser-sessions-android:0.1.0")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.webkit:webkit:1.14.0")
+    androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testImplementation(libs.junit.jupiter)
     // Gradle 9 no longer auto-resolves the JUnit Platform Launcher from
     // ServiceLoader — without this dep tests are silently discovered as zero.

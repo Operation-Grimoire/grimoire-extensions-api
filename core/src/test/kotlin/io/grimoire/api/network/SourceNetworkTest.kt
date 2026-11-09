@@ -90,4 +90,26 @@ class SourceNetworkTest {
         }
     }
 
+    @Test
+    fun `optional network interceptors observe original cookies on every redirect response`() {
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setResponseCode(302).addHeader("Location", "/chapter")
+                .addHeader("Set-Cookie", "login=first; Path=/; HttpOnly; SameSite=Strict"))
+            server.enqueue(MockResponse().setBody("chapter"))
+            val observed = mutableListOf<List<String>>()
+            val platform = object : SourceHttpPlatform, SourceHttpNetworkInterceptors {
+                override val cookieJar: CookieJar = CookieJar.NO_COOKIES
+                override val userAgent = "HostBrowser/1"
+                override val networkInterceptors = listOf(Interceptor { chain ->
+                    chain.proceed(chain.request()).also { observed += it.headers("Set-Cookie") }
+                })
+            }
+            val client = buildSourceHttpClient(platform)
+            client.newCall(Request.Builder().url(server.url("/login")).build()).execute().close()
+            assertEquals(listOf(listOf("login=first; Path=/; HttpOnly; SameSite=Strict"), emptyList<String>()), observed)
+            client.connectionPool.evictAll()
+            client.dispatcher.executorService.shutdown()
+        }
+    }
+
 }

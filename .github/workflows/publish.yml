@@ -46,6 +46,9 @@ jobs:
 
       - name: Check shared runtime and Android wrapper
         run: ./gradlew :core:test :api:assembleRelease :api:lintRelease
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Validate before creating a release tag. Existing tags must name this checkout.
       - name: Create release tag

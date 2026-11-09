@@ -1,4 +1,5 @@
 """Compile real JVM fixtures to verify the artifact compatibility gate."""
+import os
 import shutil
 import subprocess
 import tempfile
@@ -96,6 +97,51 @@ class AbiGateTest(unittest.TestCase):
         interface = self.artifact("interface", {"io/grimoire/api/Info.java":
             "package io.grimoire.api; public interface Info extends java.lang.annotation.Annotation { String name(); }"})
         _, problems = check([annotation], [interface], interface)
+        self.assertTrue(any("hierarchy/access" in p for p in problems), problems)
+
+    def test_adding_an_implemented_interface_preserves_an_old_compiled_caller(self):
+        contract = "package io.grimoire.api; public interface Before { int value(); }"
+        before = self.artifact("capability-before", {
+            "io/grimoire/api/Before.java": contract,
+            "io/grimoire/api/Source.java": "package io.grimoire.api; public final class Source implements Before { public int value() { return 7; } }",
+        })
+        after = self.artifact("capability-after", {
+            "io/grimoire/api/Before.java": contract,
+            "io/grimoire/api/Additional.java": "package io.grimoire.api; public interface Additional { int extra(); }",
+            "io/grimoire/api/Source.java": "package io.grimoire.api; public final class Source implements Before, Additional { public int value() { return 7; } public int extra() { return 8; } }",
+        })
+        _, problems = check([before], [after], after)
+        self.assertEqual([], problems)
+        caller = self.root / "OldCaller.java"
+        caller.write_text("import io.grimoire.api.*; public class OldCaller { public static void main(String[] args) { Before source = new Source(); System.out.print(source.value()); } }", encoding="utf-8")
+        subprocess.run([shutil.which("javac") or "javac", "--release", "11", "-cp", str(before), "-d", str(self.root), str(caller)], check=True, capture_output=True)
+        result = subprocess.run([shutil.which("java") or "java", "-cp", os.pathsep.join([str(after), str(self.root)]), "OldCaller"], check=True, capture_output=True, text=True)
+        self.assertEqual("7", result.stdout)
+
+    def test_removing_an_interface_or_changing_a_parent_is_rejected(self):
+        contract = "package io.grimoire.api; public interface Before { int value(); }"
+        before = self.artifact("hierarchy-before", {
+            "io/grimoire/api/Before.java": contract,
+            "io/grimoire/api/Source.java": "package io.grimoire.api; public final class Source implements Before { public int value() { return 7; } }",
+        })
+        for name, declaration in {"removed-interface": "", "changed-parent": "extends Parent implements Before"}.items():
+            with self.subTest(name=name):
+                after = self.artifact(name, {
+                    "io/grimoire/api/Before.java": contract,
+                    "io/grimoire/api/Parent.java": "package io.grimoire.api; public class Parent {}",
+                    "io/grimoire/api/Source.java": f"package io.grimoire.api; public final class Source {declaration} {{ public int value() {{ return 7; }} }}",
+                })
+                _, problems = check([before], [after], after)
+                self.assertTrue(any("hierarchy/access" in p for p in problems), problems)
+
+    def test_adding_an_interface_to_an_extensible_class_remains_rejected(self):
+        before = self.artifact("extensible-before", {"io/grimoire/api/Source.java":
+            "package io.grimoire.api; public class Source {}"})
+        after = self.artifact("extensible-after", {
+            "io/grimoire/api/Additional.java": "package io.grimoire.api; public interface Additional { default int extra() { return 8; } }",
+            "io/grimoire/api/Source.java": "package io.grimoire.api; public class Source implements Additional {}",
+        })
+        _, problems = check([before], [after], after)
         self.assertTrue(any("hierarchy/access" in p for p in problems), problems)
 
 

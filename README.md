@@ -10,7 +10,7 @@ and the HTTP/Jsoup base classes. Published to GitHub Packages as
 
 The stable release is `1.3.0`: Android uses `io.grimoire:extensions-api:1.3.0`
 and JVM hosts use `io.grimoire:extensions-core:1.3.0`. The Android wrapper
-re-exports the matching core dependency. Main builds now develop `1.3.1-SNAPSHOT`;
+re-exports the matching core dependency. Main builds now develop `1.4.0-SNAPSHOT`;
 tagged versions remain immutable.
 
 The `core` module owns the portable models, source interfaces, HTML helpers,
@@ -60,6 +60,9 @@ The CI binary check compares public/protected class hierarchies and member JVM
 descriptors against the pull request base. It also checks duplicate classes,
 Android references in core and the wrapper's core POM dependency. It is not a
 replacement for runtime browser/device or Kotlin source-compatibility tests.
+Additional implemented interfaces on final classes are allowed; existing interfaces, superclass,
+access and member descriptors must remain compatible. A compiled old-client
+regression checks linkage after an optional host capability is added.
 
 Tools that compile API source directories directly must migrate before adopting
 this layout: portable sources now live in `core/src/main/kotlin`, while the
@@ -120,3 +123,18 @@ already-installed extension APKs, so the version communicates ABI impact:
 
 Consumers — the `grimoire` app and the `grimoire-extensions` repo — should pin a
 concrete `X.Y.Z` and upgrade deliberately.
+
+## Browser session integration
+
+The Android wrapper delegates cookie storage to
+[Browser sessions](https://github.com/Operation-Grimoire/browser-sessions).
+`WebViewCookieJar` keeps its existing no-argument constructor and CookieJar ABI.
+The default Android provider pairs the library's cookie reader with a network
+interceptor, preserving raw Set-Cookie attributes across redirects. JVM hosts
+can optionally implement `SourceHttpNetworkInterceptors`; existing providers
+remain valid without it.
+
+Consumers of the Android wrapper also need the Browser sessions GitHub Packages
+Maven repository, using the same package-read credentials as this API. Core-only
+hosts acquire no browser-session dependency. The default build consumes the
+released browser-session packages.
