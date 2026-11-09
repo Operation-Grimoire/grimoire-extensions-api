@@ -21,4 +21,25 @@ The local API check used:
 
 `--no-build-cache` avoided a shared-cache lock held by the parallel app build; no caches were deleted. One emulator attempt failed in AndroidX application-factory startup before the tests; the warmed rerun completed. No app failures were suppressed.
 
-Workflow YAML and publication order were checked locally. Remote CI/review, package publication, default consumer pins and real-source authenticated browser compatibility remain unexecuted. Inspector's direct API-source compilation must migrate before merging this layout change: main pushes publish a SNAPSHOT automatically. Dual APK/JAR outputs and common target-parity fixtures remain a following milestone.
+Workflow YAML and publication order were checked locally. Remote CI/review, package publication, default consumer pins and real-source authenticated browser compatibility remain unexecuted. Main pushes publish a SNAPSHOT automatically, so coordinate the Inspector migration with the API layout change.
+
+## Consumer migration follow-up
+
+The Android challenge detector was extracted unchanged into core as
+`Response.isSourceBrowserChallenge()`. Both Android and Inspector now call it;
+only the host decides whether to solve or report a challenge. Two added detector
+tests bring the core suite to 32 passing tests. Android release assembly/lint and
+the 65-class ABI checks against both baselines passed again.
+
+The local Inspector `shared-runtime` worktree consumes the core artifact without
+compiling API source trees. Five deterministic migration tests and all 26 sources'
+offline checks passed. Live Royal Road completed with zero errors and two
+missing-thumbnail warnings. A null-context compatibility shim remains for
+Android-specific GalaxyNovels source code; no browser is emulated.
+
+The extensions `dual-runtime-artifacts` worktree builds Royal Road APK/JAR from
+the same source and verifies matching identity/version metadata. Shared fixture
+results matched across a packaged JVM JAR and an actual API 35 APK loaded through
+DexClassLoader, with both hashes checked. Grimoire desktop tests also consumed
+the external JAR. These are local consumer proofs; publication and coordinated
+remote integration remain pending.

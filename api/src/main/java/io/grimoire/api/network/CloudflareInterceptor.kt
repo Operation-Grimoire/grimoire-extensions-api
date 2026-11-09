@@ -34,7 +34,7 @@ class CloudflareInterceptor : Interceptor {
         val request = chain.request()
         val response = chain.proceed(request)
 
-        if (!response.isCloudflareChallenge()) {
+        if (!response.isSourceBrowserChallenge()) {
             return response
         }
 
@@ -71,7 +71,7 @@ class CloudflareInterceptor : Interceptor {
         // challenge HTML to the caller as content (it parses as an empty
         // page and the failure becomes invisible).
         val retried = chain.proceed(request)
-        if (retried.isCloudflareChallenge()) {
+        if (retried.isSourceBrowserChallenge()) {
             retried.close()
             recentFailures[host] = System.currentTimeMillis()
             throw CloudflareBypassException(urlString)
@@ -175,39 +175,6 @@ class CloudflareInterceptor : Interceptor {
         android.webkit.CookieManager.getInstance().getCookie(url)
             ?.split(';')?.count { it.isNotBlank() } ?: 0
 
-    private fun Response.isCloudflareChallenge(): Boolean {
-        if (code != 403 && code != 503) return false
-
-        // Definitive header signal — Cloudflare tags challenges with this
-        // regardless of the (sometimes absent) Server / cf-ray headers.
-        if (header("cf-mitigated")?.equals("challenge", ignoreCase = true) == true) return true
-
-        val snippet = runCatching {
-            peekBody(BODY_PEEK_BYTES).string()
-        }.getOrNull().orEmpty()
-
-        // An origin/edge 5xx (nginx "503 Service Temporarily Unavailable", a 502
-        // bad gateway, Cloudflare's own 52x "web server is down") is a plain
-        // server error, not a solvable challenge — veto it before the positive
-        // body checks (it has no challenge JS to run).
-        if (ORIGIN_ERROR_MARKERS.any { snippet.contains(it, ignoreCase = true) }) return false
-
-        // The challenge shell carries these scripts/phrases. Detect on the body
-        // alone — do NOT require Server: cloudflare or a cf-ray: some mirrors
-        // front a Cloudflare-style "Just a moment" interstitial without
-        // surfacing those headers, and gating on them silently mis-parses the
-        // challenge HTML as empty content instead of solving / surfacing it.
-        if (CHALLENGE_MARKERS.any { snippet.contains(it, ignoreCase = true) }) return true
-
-        // Marker-less short HTML shell still attributable to Cloudflare by its
-        // edge headers — treat as an interstitial (origin errors are vetoed
-        // above and are typically larger).
-        val isHtml = header("Content-Type")?.contains("text/html", ignoreCase = true) == true
-        val fromCloudflareEdge =
-            header("Server").orEmpty().contains("cloudflare", ignoreCase = true) ||
-                header("cf-ray") != null
-        return isHtml && fromCloudflareEdge && snippet.length < SHORT_HTML_BYTES
-    }
 
     companion object {
         private const val CLEARANCE_COOKIE = "cf_clearance"
@@ -233,35 +200,5 @@ class CloudflareInterceptor : Interceptor {
         // follows, so keep it short to stay snappy.
         private const val SETTLE_MS = 2000L
         private const val POLL_MS = 200L
-        private const val BODY_PEEK_BYTES = 128L * 1024L
-
-        // Cloudflare interstitial bodies are tiny shells; real origin error
-        // pages proxied through Cloudflare are typically larger.
-        private const val SHORT_HTML_BYTES = 30 * 1024
-
-        private val CHALLENGE_MARKERS = listOf(
-            "_cf_chl_opt",
-            "cf-browser-verification",
-            "challenge-platform",
-            "cf_chl_",
-            "/cdn-cgi/challenge-platform",
-            "just a moment",
-            "checking your browser",
-            "cf-spinner",
-        )
-
-        // Plain server/origin errors proxied through Cloudflare. Present in the
-        // body of a 5xx, absent from a genuine challenge shell — so they veto the
-        // short-HTML+cf-ray heuristic below.
-        private val ORIGIN_ERROR_MARKERS = listOf(
-            "service temporarily unavailable",
-            "502 bad gateway",
-            "504 gateway time-out",
-            "504 gateway timeout",
-            "web server is down",
-            "origin is unreachable",
-            "<center>nginx</center>",
-            "internal server error",
-        )
     }
 }
