@@ -8,9 +8,9 @@ and the HTTP/Jsoup base classes. Published to GitHub Packages as
 
 ## Shared JVM runtime
 
-The stable release is `1.3.0`: Android uses `io.grimoire:extensions-api:1.3.0`
-and JVM hosts use `io.grimoire:extensions-core:1.3.0`. The Android wrapper
-re-exports the matching core dependency. Main builds now develop `1.4.0-SNAPSHOT`;
+The stable release is `1.4.0`: Android uses `io.grimoire:extensions-api:1.4.0`
+and JVM hosts use `io.grimoire:extensions-core:1.4.0`. The Android wrapper
+re-exports the matching core dependency. Main builds now develop `1.4.1-SNAPSHOT`;
 tagged versions remain immutable.
 
 The `core` module owns the portable models, source interfaces, HTML helpers,
