@@ -7,13 +7,14 @@ import io.grimoire.api.source.Source
  * are otherwise reported as [io.grimoire.api.model.novel.Chapter.locked] — are
  * unlocked by signing in through a WebView.
  *
- * The host opens [loginUrl] in a browser so the user can complete any sign-in
+ * The host opens [loginUrl] in a WebView so the user can complete any sign-in
  * flow, including social providers (Google, Facebook, …) that rely on OAuth
  * redirects. Session cookies land in the host cookie store and are replayed on
  * the source's OkHttp requests. Read and expire those cookies through
  * [io.grimoire.api.network.SourceCookies]; do not call a platform cookie
- * manager from extension code. Cookies persist across app restarts;
- * [isLoggedIn] is the authoritative check for whether a usable session exists.
+ * manager from extension code. Whether those cookies survive an app restart
+ * depends on the host store. [isLoggedIn] is the authoritative check for
+ * whether a usable session exists.
  */
 interface WebViewLoginSource : Source {
 

@@ -92,6 +92,7 @@ internal class AndroidDocumentBrowser : SourceDocumentBrowser {
         view.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
+            userAgentString = NetworkContext.userAgent
         }
         view.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
@@ -123,6 +124,6 @@ internal class AndroidDocumentBrowser : SourceDocumentBrowser {
     private fun sameOrigin(value: String, requested: String): Boolean = runCatching {
         val target = value.toHttpUrl()
         val origin = requested.toHttpUrl()
-        target.isHttps && target.host == origin.host && target.port == origin.port
+        target.scheme == origin.scheme && target.host == origin.host && target.port == origin.port
     }.getOrDefault(false)
 }

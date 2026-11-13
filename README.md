@@ -29,10 +29,10 @@ Sources call `SourceCookies` for the signed-in profile and `SourceBrowser.read`
 when a page has to be rendered. Implement `SourceBrowserCookies` to own that
 cookie profile, and `SourceDocumentBrowser` when the host can show a page.
 Android's default platform supplies both: the WebView cookie store immediately,
-and page rendering after `NetworkContext.init`. A host without those interfaces
-still serves cookies from its `CookieJar`. If that host can load
-`android.webkit.CookieManager`, sign-out uses it instead. Calling `SourceCookies`
-still requires this core on the host classpath.
+and page rendering after `NetworkContext.init`. A host that does not implement
+`SourceBrowserCookies` uses its `CookieJar`, unless `android.webkit.CookieManager`
+loads. Then `SourceCookies.header`, `set`, and `flush` all use that manager.
+Calling `SourceCookies` still requires this core on the host classpath.
 
 JVM hosts install their browser/session integration before instantiating sources:
 
