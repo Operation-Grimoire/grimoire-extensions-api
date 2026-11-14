@@ -5,7 +5,7 @@ plugins {
 
 // Both artifacts are one binary contract and must publish at the same version.
 val publishVersion = providers.environmentVariable("API_RELEASE_TAG").orNull
-    ?.trim()?.removePrefix("v")?.takeIf { it.isNotEmpty() } ?: "1.4.1-SNAPSHOT"
+    ?.trim()?.removePrefix("v")?.takeIf { it.isNotEmpty() } ?: "1.5.1-SNAPSHOT"
 allprojects {
     group = "io.grimoire"
     version = publishVersion

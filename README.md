@@ -8,10 +8,17 @@ and the HTTP/Jsoup base classes. Published to GitHub Packages as
 
 ## Shared JVM runtime
 
-The stable release is `1.4.0`: Android uses `io.grimoire:extensions-api:1.4.0`
-and JVM hosts use `io.grimoire:extensions-core:1.4.0`. The Android wrapper
-re-exports the matching core dependency. Main builds now develop `1.4.1-SNAPSHOT`;
+The stable release is `1.5.0`: Android uses `io.grimoire:extensions-api:1.5.0`
+and JVM hosts use `io.grimoire:extensions-core:1.5.0`. The Android wrapper
+re-exports the matching core dependency. Main builds now develop `1.5.1-SNAPSHOT`;
 tagged versions remain immutable.
+
+Version 1.5 adds portable `SourceCookies` and `SourceBrowser` entry points.
+An extension uses the same implementation in its Android APK and JVM JAR.
+The host supplies `SourceBrowserCookies` and `SourceDocumentBrowser` where
+supported. Android's provider uses its WebView profile and makes page rendering
+available after `NetworkContext.init`. JVM hosts supply their own adapters;
+`SourceBrowser.ready` is false when rendering is unavailable.
 
 The `core` module owns the portable models, source interfaces, HTML helpers,
 HTTP base classes and common network exceptions. It produces a Java 11-compatible
