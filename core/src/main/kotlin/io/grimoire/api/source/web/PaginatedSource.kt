@@ -6,7 +6,8 @@ import io.grimoire.api.model.novel.Novel
 /**
  * A [ChapterSource] whose chapter list is paginated: the host fetches pages until
  * an empty result is returned (see the app's `fetchAllChapters`). Alternative to
- * [ChapterListSource] — a source implements one or the other, not both.
+ * [ChapterListSource] and [CursorPaginatedSource] — a source implements only one
+ * chapter-list capability.
  */
 interface PaginatedSource : ChapterSource {
     suspend fun getChapterList(novel: Novel, page: Int): List<Chapter>
