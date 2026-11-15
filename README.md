@@ -10,10 +10,12 @@ and the HTTP/Jsoup base classes. Published to GitHub Packages as
 
 The stable release is `1.5.0`: Android uses `io.grimoire:extensions-api:1.5.0`
 and JVM hosts use `io.grimoire:extensions-core:1.5.0`. The Android wrapper
-re-exports the matching core dependency. Main builds now develop `1.5.1-SNAPSHOT`;
+re-exports the matching core dependency. Main builds now develop `1.6.0-SNAPSHOT`;
 tagged versions remain immutable.
 
-Version 1.5 adds portable `SourceCookies` and `SourceBrowser` entry points.
+Version 1.6 adds `CursorPaginatedSource` for backends that continue chapter lists
+with opaque tokens instead of numbered pages. Version 1.5 added portable
+`SourceCookies` and `SourceBrowser` entry points.
 An extension uses the same implementation in its Android APK and JVM JAR.
 The host supplies `SourceBrowserCookies` and `SourceDocumentBrowser` where
 supported. Android's provider uses its WebView profile and makes page rendering
@@ -98,8 +100,8 @@ feature interfaces it actually supports. There is no monolithic `CatalogueSource
   `get`/`GET`/`resolveUrl`) and `ParsedHttpSource` (adds the Jsoup `asJsoup`
   helper). Carry no capability themselves.
 - **Content axis** — either web (`source.web`: a chapter list via
-  `ChapterListSource` **or** `PaginatedSource`, plus `PageListSource` for page
-  content) or whole-book (`source.epub.EpubSource`).
+  `ChapterListSource`, `PaginatedSource`, or `CursorPaginatedSource`, plus
+  `PageListSource` for page content) or whole-book (`source.epub.EpubSource`).
 - **Feature mixins** (`source.feature`) — `PopularSource`, `LatestSource`,
   `SearchSource`, `FilterSource`, `ConfigurableSource`, `MultiLanguageSource`,
   `MultiHostSource`, `WebViewLoginSource`.
@@ -114,6 +116,16 @@ Packages: `model.{novel,filter,lang,pref}`, `source`, `source.{http,web,epub,fea
 `network` (transport internals), `util` (Jsoup `richHtml`/`richDescription`).
 Identity is derived from the package name via `sourceIdFor()` — sources never
 declare an id. `@SourceInfo` is read statically by the CI index generator.
+
+## Cursor-based chapter pagination
+
+A `CursorPaginatedSource` returns a `ChapterPage` containing chapters and an
+optional `nextCursor`. Hosts pass null for the first request, then pass each
+returned cursor into the following request until it is null. `getAllChapters`
+provides the shared sequential walk with duplicate removal and explicit failures
+for blank/repeated cursors, empty or duplicate-only continuations, and excessive
+page counts.
+Cursor pagination cannot be parallelized or randomly accessed by page number.
 
 ## Versioning
 

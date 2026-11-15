@@ -29,16 +29,16 @@ source/
   SourceId          sourceIdFor(pkg) — identity from package name (no declared id)
   AdultContent      NONE / PARTIAL / FULL (surfaced in index.json)
   http/             HttpSource, ParsedHttpSource (transport only, no capability)
-  web/              ChapterSource, ChapterListSource, PaginatedSource, PageListSource
+  web/              ChapterSource, ChapterListSource, PaginatedSource, CursorPaginatedSource, PageListSource
   epub/             EpubSource (whole-book content axis)
   feature/          Popular/Latest/Search/Filter/Configurable/MultiLanguage/MultiHost/WebViewLogin
 network/            OkHttp client, Cloudflare + cookie-jar internals
 util/               richHtml / richDescription (Jsoup → constrained HTML)
 ```
 
-Content is an axis: a web source declares a chapter list (`ChapterListSource`
-**or** `PaginatedSource`) + `PageListSource`; an `EpubSource` delivers a whole
-book instead. `MultiLanguageSource.availableLanguages()` is `suspend` and returns
+Content is an axis: a web source declares a chapter list (`ChapterListSource`,
+`PaginatedSource`, or `CursorPaginatedSource`) + `PageListSource`; an
+`EpubSource` delivers a whole book instead. `MultiLanguageSource.availableLanguages()` is `suspend` and returns
 `List<Language>`; `ConfigurableSource.setPreferences` takes `Map<String, PrefValue>`.
 
 ## ABI stability
