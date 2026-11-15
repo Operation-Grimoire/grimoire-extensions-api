@@ -8,6 +8,8 @@ import io.grimoire.api.model.novel.Novel
  * A [ChapterSource] whose backend continues from opaque cursors rather than
  * numbered pages. The host starts with a null cursor and passes each returned
  * [ChapterPage.nextCursor] to the following call. A null cursor ends the list.
+ * Alternative to [ChapterListSource] and [PaginatedSource] — a source implements
+ * only one chapter-list capability.
  */
 interface CursorPaginatedSource : ChapterSource {
     suspend fun getChapterList(novel: Novel, cursor: String?): ChapterPage
@@ -15,8 +17,9 @@ interface CursorPaginatedSource : ChapterSource {
 
 /**
  * Fetch a complete chapter list sequentially. Duplicate chapter URLs are
- * removed. Empty continuation pages, blank or repeated cursors, and walks past
- * [maxPages] fail rather than silently truncating the result.
+ * removed. Continuation pages that are empty or contain no new chapter URLs,
+ * blank or repeated cursors, and walks past [maxPages] fail rather than silently
+ * truncating the result.
  */
 suspend fun CursorPaginatedSource.getAllChapters(
     novel: Novel,

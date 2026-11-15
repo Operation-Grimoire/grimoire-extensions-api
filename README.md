@@ -123,7 +123,8 @@ A `CursorPaginatedSource` returns a `ChapterPage` containing chapters and an
 optional `nextCursor`. Hosts pass null for the first request, then pass each
 returned cursor into the following request until it is null. `getAllChapters`
 provides the shared sequential walk with duplicate removal and explicit failures
-for blank/repeated cursors, empty continuations, and excessive page counts.
+for blank/repeated cursors, empty or duplicate-only continuations, and excessive
+page counts.
 Cursor pagination cannot be parallelized or randomly accessed by page number.
 
 ## Versioning
