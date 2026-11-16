@@ -8,9 +8,9 @@ and the HTTP/Jsoup base classes. Published to GitHub Packages as
 
 ## Shared JVM runtime
 
-The stable release is `1.5.0`: Android uses `io.grimoire:extensions-api:1.5.0`
-and JVM hosts use `io.grimoire:extensions-core:1.5.0`. The Android wrapper
-re-exports the matching core dependency. Main builds now develop `1.6.0-SNAPSHOT`;
+The stable release is `1.6.0`: Android uses `io.grimoire:extensions-api:1.6.0`
+and JVM hosts use `io.grimoire:extensions-core:1.6.0`. The Android wrapper
+re-exports the matching core dependency. Main builds now develop `1.7.0-SNAPSHOT`;
 tagged versions remain immutable.
 
 Version 1.6 adds `CursorPaginatedSource` for backends that continue chapter lists
